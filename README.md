@@ -1,1 +1,216 @@
-# wql
+#+title: WQL Query Language
+
+* Examples
+
+[ LTOP: h0
+INDEX: e2 [ e SF: prop TENSE: past MOOD: indicative PROG: - PERF: - ]
+RELS: < [ _some_q_indiv<0:4> LBL: h4 ARG0: x3 [ x PERS: 3 NUM: sg IND: + ] RSTR: h5 BODY: h6 ]
+ [ _big_a_1<5:8> LBL: h7 ARG0: e8 [ e SF: prop TENSE: untensed MOOD: indicative PROG: bool PERF: - ] ARG1: x3 ]
+ [ _dog_n_1<9:12> LBL: h7 ARG0: x3 ]
+ [ _chase_v_1<13:19> LBL: h1 ARG0: e2 ARG1: x3 ARG2: x9 [ x PERS: 3 NUM: sg IND: + ] ]
+ [ _every_q<20:25> LBL: h10 ARG0: x9 RSTR: h11 BODY: h12 ]
+ [ _cat_n_1<26:29> LBL: h13 ARG0: x9 ] >
+HCONS: < h0 qeq h1 h5 qeq h7 h11 qeq h13 >
+ICONS: < > ]
+
+
+h1:+every [RSTR h2]
+h3:+cat
+{h2 qeq h3}
+
+
+SENT: kitty probably sleeps
+[ LTOP: h0
+INDEX: e2 [ e SF: prop TENSE: pres MOOD: indicative PROG: - PERF: - ]
+RELS: < [ proper_q<0:5> LBL: h4 ARG0: x3 [ x PERS: 3 NUM: sg IND: + ] RSTR: h5 BODY: h6 ]
+ [ named<0:5> LBL: h7 CARG: "Kitty" ARG0: x3 ]
+ [ _probable_a_1<6:14> LBL: h1 ARG0: i9 ARG1: h10 ]
+ [ _sleep_v_1<15:21> LBL: h11 ARG0: e2 ARG1: x3 ] >
+HCONS: < h0 qeq h1 h5 qeq h7 h10 qeq h11 >
+ICONS: < > ]
+
+h1:+probable[ARG1 x]
+y:/v
+{y qeq x}
+
+
+#+begin_example
+(p*[A* y] | h:try_v*[ARG1 x])
+n:v*[A* c]
+/v*[ARG* x]  
+quarterly[ARG1 x]
+x:+result 
+x:=1
+y:crisis[]
+h1:+terrible[ARG* x1]
+#+end_example
+
+Exemplo:
+
+#+begin_example
+h1:+terrible[ARG1 y] 
+(h2:+terrible[ARG1 x] | h3:run )
+{ h1 qeq h3 } 
+#+end_example
+
+* Tokenizer
+
+"12  +  34*56"?
+
+=> "12" "+" "34" "*" "56"
+
+Grammatica EBNF
+
+EXP := EXP OP EXP | NUM
+OP  := "+" | "*"
+NUM := /[0-9]+/
+
+=> "1" "2" "+" ...
+
+Gramatica BNF
+
+EXP := EXP OP EXP | NUM
+OP  := "+" | "*"
+NUM := D NUM | _
+D := 0 | 1 | ... | 9
+
+
+"a b"?
+  => "a" "b"
+  => "a" " " "b"
+
+So how to tokenize?
+
+  h:quarterly[ARG1 x]
+
+h:quarterly[    ARG1    x  ]  // 1 predicado
+h:quarterly  [ ARG1  x ]  // 2 predicados
+
+* Formal Definition (BNF)
+
+
+Following [[https://www.w3.org/TR/xml/#sec-notation][W3C's EBNF notation]]
+
+#+begin_example
+Wql         := Space? PredExp Space? ("{" Space? HList? Space? "}")? Space?
+PredExpr    := Predication 
+               | PredExpr Space? "|" Space? PredExpr
+               | PredExpr Space PredExpr
+               | "(" Space? PredExpr Space? ")"
+               | "!" Space? PredExpr
+Predication := "^"? (Var ":")? PredMod? PredPat ("[" Space? ArgList? Space? "]")?
+               | (Var ":")? "[" Space? ArgList? Space? "]"
+ArgList     := Argument | Argument Space? "," Space? ArgList
+Argument    := RolePat (Space Var)?
+HList       := Heq | Heq Space? "," Space? Hlist
+Heq         := Var Space? HconsOp Space? Var
+HconsOp     := "=q" 
+PredPat     := "_"? [^\s_]+ (_[nvajrscpqxud])? (_([^\s_<]|<(?![-0-9:#@ ]*>\s))+)? (_rel)?
+RolePat     := [a-zA-Z0-9\*]+
+Var         := [a-zA-Z] [a-zA-Z0-9]*
+PredMod     := [+=/]
+Space       := [\s]+
+#+end_example
+
+* SPARQL
+
+** transformação RDF
+
+#+begin_src 
+run[ARG1 x] 
+#+end_src
+
+
+:e1 mrs:predicate "run" .
+:e2 mrs:arg1 :e3 
+:e2 mrs:role :e3
+
+[* x] =>
+
+-- mais literal
+select ?x0
+ ?x0 a mrs:MRS .
+ ?x0 mrs:hasEP ?x1 .
+ ?x1 ?p ?x2 .
+ ?p rdfs:label ?l
+ filter regex(?l, ".*")
+}
+
+-- mais pre-processamento
+select ?x0
+ ?x0 a mrs:MRS .
+ ?x0 mrs:hasEP ?x1 .
+ ?x1 mrs:role ?x2 .
+}
+
+
+Semântica das predicações:
+
+And (And P (Not Q)) (Or R S)
+[Hcons h m]
+
+operacoes:
+
+h1:every*[RSTR h2]
+h3:+cat
+{h2 qeq h3}
+
+from ?g {
+ { ?x00 mrs:predicate ?p
+  ?x00 mrs:hole ?h1
+  ?x00 mrs:rstr ?h2
+  filter regex(?p, "every.*") }
+
+{ ?x02 mrs:predicate/mrs:lemma "cat"
+  ?x02 mrs:hole ?h3 }
+
+}
+ 
+{ ?m a mrs:MRS
+  ?m mrs:hasEP ?x00
+  ?m mrs:hasEP ?x02
+  ?m mrs:hasHcons ?mhs }
+
+{ ?x00 mrs:predicate ?p
+  ?x00 mrs:hole ?h1
+  ?x00 mrs:rstr ?h2
+  filter regex(?p, "every.*") }
+
+{ ?x02 mrs:predicate/mrs:lemma "cat"
+  ?x02 mrs:hole ?h3 }
+
+{ ?mhs mrs:left  ?h2
+  ?mhs mrs:right ?h3
+  ?mhs a mrs:QEQ }
+
+
+f :: Wql -> String ?
+f :: Wql -> Sparql 
+q :: Sparql -> String 
+
+f :: PredExp -> Sparql
+f (p | q) = Graph (f p) UNION Graph (f q)
+
+
+** pre-processing
+
+Not (Not P) == P
+Not (And P Q) == Or (Not P) (Not Q)
+Not (Or P Q) == And (Not P) (Not Q)
+
+pros? cons?
+
+* References
+
+- http://sdp.delph-in.net/2015/search.html
+- http://wsi.mybluemix.net/demo/
+- http://moin.delph-in.net/WeSearch/QueryLanguage
+- http://lists.delph-in.net/archives/developers/2020/003199.html
+- http://moin.delph-in.net/wiki/PredicateRfc
+
+- https://hackage.haskell.org/package/base-4.14.1.0/docs/Text-ParserCombinators-ReadP.html
+- http://hackage.haskell.org/package/parsec
+
+- http://www.macs.hw.ac.uk/~rs46/slides/rdf4h/slides.html
+- https://github.com/robstewart57/hsparql
+- https://hackage.haskell.org/package/swish 
