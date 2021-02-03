@@ -13,7 +13,8 @@ type Pattern = String
 type Variable = String
 
 data Predicate = Predicate
-  { predvar   :: Maybe Variable
+  { predtop   :: Bool
+  , predvar   :: Maybe Variable
   , predmod   :: Maybe Char
   , predpred  :: Maybe Pattern
 --  , predLemma :: Maybe Pattern
@@ -86,37 +87,50 @@ arglist = do
   char ']'
   return arglist_
 
+lemma = do
+  munch1 $ \c -> (not (elem c "?[]{}|!&_") && not (isSpace c))
+pos = do
+  underlinePos <- char '_'
+  charPos <- satisfy $ \c -> elem c "nvajrscpqxud"
+  return [underlinePos, charPos]
+sense = do
+  underlineSense <- option "" $ string "_"
+  sense <- munch1 $ \c -> (not (elem c "?[]{}|!&_") && not (isSpace c))
+  return (underlineSense ++ sense)
+
 predPat :: ReadP String
 predPat = do
-  underlineAbst <- option "" $ string "_"
-  lemma <- munch1 $ \c -> (not (elem c "?[]{}|!&_") && not (isSpace c))
-  pos <- option "" (do
-    underlinePos <- char '_'
-    charPos <- satisfy $ \c -> elem c "nvajrscpqxud"
-    return [underlinePos, charPos])
-  sense <- option "" (do            -- revisit later
-    underlineSense <- option "" $ string "_"
-    sense <- munch1 $ \c -> (not (elem c "?[]{}|!&_") && not (isSpace c))
-    return (underlineSense ++ sense))
-  option "" $ string "_rel"
-  return (underlineAbst ++ lemma ++ pos ++ sense)
+  under_ <- option "" $ string "_"
+  lemma_ <- lemma
+  pos_ <- option "" pos
+  sense_ <- option "" sense
+  rel_ <- option "" $ string "_rel"
+  return (under_ ++ lemma_ ++ pos_ ++ sense_ ++ rel_)
+
+predTop :: ReadP Bool
+predTop = do
+  predTop_ <- char '^'
+  if predTop_ == '^'
+    then return True
+    else return False
 
 modifier :: ReadP Char
 modifier = satisfy $ \c -> elem c "+/="
 
 predication1 :: ReadP PredExpr
 predication1 = do
+  predTop_ <- predTop <++ (return False)
   predVar_ <- (fmap Just predVar) <++ (return Nothing)
   modifier_ <- (fmap Just modifier) <++ (return Nothing)
   predPat_ <- (fmap Just predPat)
   arglist_ <- (fmap Just arglist) <++ (return Nothing)
-  return (P $ Predicate predVar_ modifier_ predPat_ arglist_)
+  return (P $ Predicate predTop_ predVar_ modifier_ predPat_ arglist_)
 
 predication2 :: ReadP PredExpr
 predication2 = do
   predVar_ <- (fmap Just predVar) <++ (return Nothing)
   arglist_ <- (fmap Just arglist)
-  return (P $ Predicate predVar_ Nothing Nothing arglist_)
+  return (P $ Predicate False predVar_ Nothing Nothing arglist_)
 
 predication :: ReadP PredExpr
 predication = do
