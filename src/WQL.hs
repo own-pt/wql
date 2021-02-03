@@ -1,7 +1,7 @@
 -- reference: en.wikibooks.org/wiki/Haskell/ParseExps
 -- reference: two-wrongs.com/parser-combinators-parsing-for-haskell-beginners.html
 
-module WQL  where 
+module WQL where 
 
 import GHC.Unicode ( isSpace, isAlpha, isDigit, isAlphaNum )
 import Control.Applicative
@@ -13,18 +13,18 @@ type Pattern = String
 type Variable = String
 
 data Predicate = Predicate
-  { predVar_   :: Maybe Variable
-  , predMod   :: Maybe Char
-  , predPred  :: Maybe Pattern
+  { predvar   :: Maybe Variable
+  , predmod   :: Maybe Char
+  , predpred  :: Maybe Pattern
 --  , predLemma :: Maybe Pattern
 --  , predPOS   :: Maybe Char
 --  , predSense :: Maybe Char
-  , predArgs  :: Maybe [Arg]
+  , predargs  :: Maybe [Arg]
   } deriving Show
 
 data Arg = Arg
-  { rolePat_ :: Pattern
-  , argVar  :: Maybe Variable
+  { rolepat :: Pattern
+  , argvar  :: Maybe Variable
   } deriving Show
 
 data PredExpr
@@ -40,8 +40,8 @@ data Cons = Cons
   } deriving Show
 
 data WQL = WQL
-  { p :: PredExpr -- predication
-  , h :: Maybe [Cons] -- hcons
+  { predx :: PredExpr -- predication
+  , hcons :: Maybe [Cons] -- hcons
   } deriving Show
 
 {- PREDICATION PARSER -}
@@ -190,15 +190,18 @@ wql = do
   skipSpaces
   return (WQL predication_ hconstraints_)
 
-
-_pushNots :: PredExp -> PredExp
-_pushNots p =
-  | And predl predr = and (_pushNots predl) (_pushNots predr)
-  | Or predl predr = or (_pushNots predl) (_pushNots predr)
-  | Not (Not p) = p
-  | Not (Or predl predr) = And (Not predl) (Not predr)
-  | Not (And predl predr) = Or (Not predl) (Not predr)
+{- OPTIMIZATIONS -}
+_pushNots :: PredExpr -> PredExpr
+-- NOTE: simple operators
+_pushNots (Not predx) = Not (_pushNots predx)
+_pushNots (Or predl predr) = Or (_pushNots predl) (_pushNots predr)
+_pushNots (And predl predr) = And (_pushNots predl) (_pushNots predr)
+-- NOTE: not-composite operators
+_pushNots (Not (Not p)) = _pushNots p
+_pushNots (Not (Or predl predr)) = And (_pushNots (Not predl)) (_pushNots (Not predr))
+_pushNots (Not (And predl predr)) = Or (_pushNots (Not predl)) (_pushNots (Not predr))
+-- NOTE: every other case
+_pushNots predx = predx
   
 pushNots :: WQL -> WQL
-pushNots w =
-  | WQL p h = WQL (_pushNots p) h
+pushNots (WQL predx hcons) = WQL (_pushNots predx) hcons
