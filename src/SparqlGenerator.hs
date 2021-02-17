@@ -1,0 +1,2 @@
+
+-- generate SPARQL from WQL
