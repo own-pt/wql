@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.3.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a9bef5b2e4def5c9ff3bcfcdaf80d79d339e058e4f45240e5d773f6212541b99
+-- hash: 2c6eab119dac6f2b325c8145425c3d387ec9488c5be7452c1c424fb3f9f8128f
 
 name:           wql
 version:        0.1.0.0
@@ -27,7 +27,12 @@ source-repository head
 
 library
   exposed-modules:
+      Data
       Lib
+      Sparql
+      SparqlGenerator
+      WQL
+      WqlParser
   other-modules:
       Paths_wql
   hs-source-dirs:
