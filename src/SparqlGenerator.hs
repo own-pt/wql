@@ -10,15 +10,61 @@ import Database.HSparql.QueryGenerator as QG
 import qualified Data.Text as T
 import qualified Data.Map as Map
 
-type VariablesMap = Map.Map Variable (QG.Query QG.Variable)
+type VariablesMap = Map.Map Data.Variable (Query QG.Variable)
 
-myLookup :: Variable -> VariablesMap -> QG.Query QG.Variable
+-- Making the Variables map:
+
+myLookup :: Data.Variable -> VariablesMap -> Query QG.Variable
 myLookup search dict =
   case Map.lookup search dict of
     Nothing -> var
     Just x -> x
 
-transformation :: PredExpr -> QG.Query QG.SelectQuery
+
+
+makeVars :: PredExpr -> VariablesMap
+makeVars pred = makeVarsAux pred Map.empty
+
+makeVarsAux :: PredExpr -> VariablesMap -> VariablesMap
+makeVarsAux (And pred1 pred2) dict =
+  makeVarsAux pred2 newDict
+  where
+    newDict = makeVarsAux pred1 dict
+makeVarsAux (Or pred1 pred2) dict =
+  makeVarsAux pred2 newDict
+  where
+    newDict = makeVarsAux pred1 dict
+makeVarsAux (Not pred) dict =
+  makeVarsAux pred dict
+makeVarsAux (P pred) dict =
+  makeVarsPred pred dict
+
+makeVarsPred :: Predicate -> VariablesMap -> VariablesMap
+makeVarsPred (Predicate _ (Just var) _ _ argList) dict =
+  makeVarsArgs argList newDict
+  where newDict = Map.insert var (QG.var) dict
+makeVarsPred (Predicate _ (Nothing) _ _ argList) dict =
+  makeVarsArgs argList dict
+  
+
+makeVarsArgs :: Maybe [Arg] -> VariablesMap -> VariablesMap
+makeVarsArgs Nothing dict = dict
+makeVarsArgs (Just []) dict = dict
+makeVarsArgs (Just (x:xs)) dict =
+  makeVarsArgs (Just xs) newDict
+  where newDict = makeVarsArg x dict
+
+  
+makeVarsArg :: Arg -> VariablesMap -> VariablesMap
+makeVarsArg (Arg _ Nothing) dict =
+  dict
+makeVarsArg (Arg _ (Just x)) dict =
+  Map.insert x y dict
+  where y = QG.var
+
+-- now the SPARQL generator        
+
+transformation :: PredExpr -> Query SelectQuery
 transformation pred =
   do
     mrs <- prefix "mrs" (iriRef "http://www.delph-in.net/schema/mrs#")
@@ -33,31 +79,35 @@ transformation pred =
     middleTransform pred mrsVar dict
 
     selectVars [mrsVar]
-  where dict = Wsi.makeVars pred
+  where dict = makeVars pred
 
 
-middleTransform :: Wsi.PredExpr -> QG.Variable -> VariablesMap -> Query [QG.Pattern]
-middleTransform (Wsi.P pred) mrsVar dict =
+middleTransform :: PredExpr -> QG.Variable -> VariablesMap -> Query [QG.Pattern]
+middleTransform (P pred) mrsVar dict =
   atomicTransform pred mrsVar dict
-middleTransform (Wsi.And pred1 pred2) mrsVar dict =
+middleTransform (And pred1 pred2) mrsVar dict =
   do
     listT1 <- middleTransform pred1 mrsVar dict
     listT2 <- middleTransform pred2 mrsVar dict
     return (listT1 ++ listT2)
-middleTransform (Wsi.Or pred1 pred2) mrsVar dict =
+middleTransform (Or pred1 pred2) mrsVar dict =
   do
     orPatterns <- union
                   (middleTransform pred1 mrsVar dict)
                   (middleTransform pred2 mrsVar dict)
     return [orPatterns]
-middleTransform (Wsi.Not pred) mrsVar dict =
+{-
+-- Understand notExists
+middleTransform (Not pred) mrsVar dict =
   do
     notPattern <- notExists $ middleTransform pred mrsVar dict
     return [notPattern]
+-}
+
   
 atomicTransform ::
   Predicate  -> QG.Variable -> VariablesMap -> Query [QG.Pattern]
-atomicTransform (Predicate (Just var_) Nothing (Just predText) Nothing) mrsVar dict =
+atomicTransform (Predicate _ (Just var_) Nothing (Just predText) Nothing) mrsVar dict =
   do
     mrs <- prefix "mrs" (iriRef "http://www.delph-in.net/schema/mrs#")
     erg <- prefix "erg" (iriRef "http://www.delph-in.net/schema/erg#")
@@ -74,7 +124,7 @@ atomicTransform (Predicate (Just var_) Nothing (Just predText) Nothing) mrsVar d
     t3 <- triple pred1Var (delph .:. "predText") (iriRef $ T.pack predText) -- não considera regex
     --listArgsTuples <- processArgs argList ep1Var dict
     return [t1, t2, t3]
-atomicTransform (Wsi.Predicate (Just var_) Nothing (Just predText) (Just [])) mrsVar dict =
+atomicTransform (Predicate _ (Just var_) Nothing (Just predText) (Just [])) mrsVar dict =
   do
     mrs <- prefix "mrs" (iriRef "http://www.delph-in.net/schema/mrs#")
     erg <- prefix "erg" (iriRef "http://www.delph-in.net/schema/erg#")
@@ -90,7 +140,7 @@ atomicTransform (Wsi.Predicate (Just var_) Nothing (Just predText) (Just [])) mr
     t2 <- triple ep1Var (delph .:. "hasPredicate") pred1Var
     t3 <- triple pred1Var (delph .:. "predText") (iriRef $ T.pack predText) -- não considera regex
     return [t1, t2, t3]
-atomicTransform (Predicate (Just var_) Nothing (Just predText) argList) mrsVar dict =
+atomicTransform (Predicate _ (Just var_) Nothing (Just predText) argList) mrsVar dict =
   do
     mrs <- prefix "mrs" (iriRef "http://www.delph-in.net/schema/mrs#")
     erg <- prefix "erg" (iriRef "http://www.delph-in.net/schema/erg#")
@@ -108,7 +158,7 @@ atomicTransform (Predicate (Just var_) Nothing (Just predText) argList) mrsVar d
     t4 <- processArgs argList ep1Var dict
     return (t1 : t2 : t3 : t4)  
 
-processArgs :: Maybe [Arg] -> Variable -> VariablesMap -> Query [Pattern]
+processArgs :: Maybe [Arg] -> QG.Variable -> VariablesMap -> Query [QG.Pattern]
 processArgs (Just (x:[])) epVar dict =
   do
     mrs <- prefix "mrs" (iriRef "http://www.delph-in.net/schema/mrs#")
@@ -118,10 +168,10 @@ processArgs (Just (x:[])) epVar dict =
     rdfs <- prefix "rdfs" (iriRef "http://www.w3.org/2000/01/rdf-schema#")
     xsd <- prefix "xsd" (iriRef "http://www.w3.org/2001/XMLSchema#")
     
-    holeVar <- (case Wsi.argVar x of
+    holeVar <- (case argvar x of
                   Just y -> myLookup y dict
                   Nothing -> var)
-    t1 <- triple epVar (mrs .:. (T.pack $ Wsi.rolePat_ x)) holeVar
+    t1 <- triple epVar (mrs .:. (T.pack $ rolepat x)) holeVar
     return [t1]
 processArgs (Just (x:xs)) epVar dict =
   do
@@ -132,10 +182,10 @@ processArgs (Just (x:xs)) epVar dict =
     rdfs <- prefix "rdfs" (iriRef "http://www.w3.org/2000/01/rdf-schema#")
     xsd <- prefix "xsd" (iriRef "http://www.w3.org/2001/XMLSchema#")
     
-    holeVar <- (case Wsi.argVar x of
+    holeVar <- (case argvar x of
                   Just y -> myLookup y dict
                   Nothing -> var)
-    t1 <- triple epVar (mrs .:. (T.pack $ Wsi.rolePat_ x)) holeVar
+    t1 <- triple epVar (mrs .:. (T.pack $ rolepat x)) holeVar
     t2 <- processArgs (Just xs) epVar dict
     return (t1 : t2)   
 
@@ -157,7 +207,7 @@ processArgs (Just (x:xs)) epVar dict =
 -- Sobre o ponto 2 do TODO:
 
 
-testeVarPat :: Variable -> Variable -> Variable -> T.Text -> Variable -> Query [Pattern]
+testeVarPat :: QG.Variable -> QG.Variable -> QG.Variable -> T.Text -> QG.Variable -> Query [QG.Pattern]
 testeVarPat v y z role label =
   do
     rdf <- prefix "rdf" (iriRef "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
@@ -171,7 +221,7 @@ testeVarPat v y z role label =
     return [t1, t2, t3, t4]
 
 
-testeVarPat2 :: Variable -> Variable -> Variable -> T.Text -> Query [Pattern]
+testeVarPat2 :: QG.Variable -> QG.Variable -> QG.Variable -> T.Text -> Query [QG.Pattern]
 testeVarPat2 v y z role =
   do
     rdf <- prefix "rdf" (iriRef "http://www.w3.org/1999/02/22-rdf-syntax-ns#")

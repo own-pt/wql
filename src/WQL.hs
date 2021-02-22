@@ -7,6 +7,7 @@ import GHC.Unicode ( isSpace, isAlpha, isDigit, isAlphaNum )
 import Control.Applicative
 import Text.ParserCombinators.ReadP as RP
 import Data
+import Data.Text as T
 
 {- DATA TYPES FIRST DEFINITIONS -}
 {- PREDICATION PARSER -}
