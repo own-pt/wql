@@ -8,3 +8,4 @@ extra-deps:
   commit: 7db683d8e47d5b383673a662aaec21380997107b
 - text-1.2.4.1
 - containers-0.6.2.1
+- rdf4h-4.0.2
