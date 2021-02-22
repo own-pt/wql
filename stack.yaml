@@ -6,3 +6,5 @@ packages:
 extra-deps:
 - git: https://github.com/robstewart57/hsparql.git
   commit: 7db683d8e47d5b383673a662aaec21380997107b
+- text-1.2.4.1
+- containers-0.6.2.1
