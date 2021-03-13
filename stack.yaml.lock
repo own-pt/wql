@@ -3,49 +3,28 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-snapshots:
-- original: lts-17.4
-  completed:
-    sha256: f11e2153044f5f71ea7b1c9398f4721f517c9bd37642ed769647b896564021f3
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/17/4.yaml
-    size: 563103
 packages:
-- original:
-    git: https://github.com/robstewart57/hsparql.git
-    commit: 7db683d8e47d5b383673a662aaec21380997107b
-  completed:
-    pantry-tree:
-      sha256: 17dd1f4f6a2e1a9bc5408dcfe60572c64a358bfbf7087bbec27ff74a66b31742
-      size: 1314
+- completed:
+    name: hsparql
     version: 0.3.6
     git: https://github.com/robstewart57/hsparql.git
-    name: hsparql
+    pantry-tree:
+      size: 1314
+      sha256: 17dd1f4f6a2e1a9bc5408dcfe60572c64a358bfbf7087bbec27ff74a66b31742
     commit: 7db683d8e47d5b383673a662aaec21380997107b
-- original:
-    hackage: text-1.2.4.1
-  completed:
-    pantry-tree:
-      sha256: b1fd81329340a9c6eea4e78313d36c6a333a5de6032ec1536ff6c70a4300b46c
-      size: 7720
-    hackage: text-1.2.4.1@sha256:e12b468008b3c2bbc1f39bd2dcb75ba8f563c65aa5e54ee223b76463a845b6f1,7184
-- original:
-    hackage: containers-0.6.2.1
-  completed:
-    pantry-tree:
-      sha256: 5bb0af2da4e4cc5472a17063ecdbda8f1117e5f3509fcd600f2cbd7e2b760f49
-      size: 2823
-    hackage: containers-0.6.2.1@sha256:bbc3d2d5eef59a5d26383fb4b727c968390f2b6e9bd413d29aa875175bb16f8b,2460
-- original:
-    hackage: rdf4h-4.0.2
-  completed:
-    pantry-tree:
-      sha256: 653ea3104fcc750254d35f3ea4d4946e8acba92224c35e18f06827fa6dcf3012
-      size: 2562
+  original:
+    git: https://github.com/robstewart57/hsparql.git
+    commit: 7db683d8e47d5b383673a662aaec21380997107b
+- completed:
     hackage: rdf4h-4.0.2@sha256:47de41d62c5c2141c990be67f6d1973e0a242db9f1d1d22da4aeeb817de5f0fa,5181
-- original:
-    hackage: transformers-0.5.6.2
-  completed:
     pantry-tree:
-      sha256: c79246ba7d61392c2f214376fed3c2a05e4b2649b93ec2c849a86493f278ace0
-      size: 2512
-    hackage: transformers-0.5.6.2@sha256:6c959d14430f4deffb99579ba019de07c3d852a2122b6f449344386c7d75ff1d,3172
+      size: 2562
+      sha256: 653ea3104fcc750254d35f3ea4d4946e8acba92224c35e18f06827fa6dcf3012
+  original:
+    hackage: rdf4h-4.0.2
+snapshots:
+- completed:
+    size: 565266
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/17/5.yaml
+    sha256: 78e8ebabf11406261abbc95b44f240acf71802630b368888f6d758de7fc3a2f7
+  original: lts-17.5
