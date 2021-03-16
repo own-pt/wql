@@ -155,14 +155,14 @@ processArgs (Just [x]) epVar dict prefixes =
     holeVar <- (case argvar x of
                   Just y -> myLookup y dict
                   Nothing -> var)
-    t1 <- triple epVar (head prefixes .:. T.pack (rolepat x)) holeVar
+    t1 <- triple epVar (head prefixes .:. T.toLower (T.pack $ rolepat x)) holeVar
     return [t1]
 processArgs (Just (x:xs)) epVar dict prefixes =
   do
     holeVar <- (case argvar x of
                   Just y -> myLookup y dict
                   Nothing -> var)
-    t1 <- triple epVar (head prefixes .:. T.pack (rolepat x)) holeVar
+    t1 <- triple epVar (head prefixes .:. T.toLower (T.pack $ rolepat x)) holeVar
     t2 <- processArgs (Just xs) epVar dict prefixes
     return (t1 : t2)   
 
