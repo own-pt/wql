@@ -26,6 +26,7 @@ dependencies:
 - transformers
 - hsparql
 - rdf4h
+- mtl == 2.2.2
 
 library:
   source-dirs: src

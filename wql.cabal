@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 12b2a2618fa34b875b89ef083a3c01a6428337e6c96a9c2c88bbcc839626d423
+-- hash: 025adf2b03912478a72bc887c52141515b4d221018f5761f60ef2e25602c532c
 
 name:           wql
 version:        0.1.0.0
@@ -30,6 +30,7 @@ library
       Data
       Lib
       SparqlGenerator
+      SparqlGenerator2
       WQL
   other-modules:
       Paths_wql
@@ -39,6 +40,7 @@ library
       base >=4.7 && <5
     , containers
     , hsparql
+    , mtl ==2.2.2
     , rdf4h
     , text
     , transformers
@@ -55,6 +57,7 @@ executable wql-exe
       base >=4.7 && <5
     , containers
     , hsparql
+    , mtl ==2.2.2
     , rdf4h
     , text
     , transformers
@@ -73,6 +76,7 @@ test-suite wql-test
       base >=4.7 && <5
     , containers
     , hsparql
+    , mtl ==2.2.2
     , rdf4h
     , text
     , transformers
