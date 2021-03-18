@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module SparqlGenerator2 where
+module SparqlGenerator where
 
 import GHC.Unicode ( isSpace, isAlpha, isDigit, isAlphaNum )
 import Control.Applicative
@@ -49,7 +49,7 @@ middleTransform (And pred1 pred2) s =
     os <- s
     p0 <- patterns os
     s1 <- middleTransform pred1 $ return $ TransformData (varDict os) (mrsVar os) (prefixes os) (return [])
-    s2 <- middleTransform pred1 $ return $ TransformData (varDict s1) (mrsVar os) (prefixes os) (return [])
+    s2 <- middleTransform pred2 $ return $ TransformData (varDict s1) (mrsVar os) (prefixes os) (return [])
     p1 <- patterns s1
     p2 <- patterns s2
     return $ TransformData (varDict s2) (mrsVar os) (prefixes os) (return $ p0 ++ p1 ++ p2)
@@ -59,8 +59,10 @@ middleTransform (Or pred1 pred2) s =
     os <- s
     p0 <- patterns os
     s1 <- middleTransform pred1 $ return $ TransformData (varDict os) (mrsVar os) (prefixes os) (return [])
-    s2 <- middleTransform pred1 $ return $ TransformData (varDict s1) (mrsVar os) (prefixes os) (return [])
-    t1 <- union (patterns s1) (patterns s2)
+    s2 <- middleTransform pred2 $ return $ TransformData (varDict s1) (mrsVar os) (prefixes os) (return [])
+    let p1 = patterns s1
+        p2 = patterns s2
+    t1 <- p1 `union` p2 -- p1 :: Pattern
     return $ TransformData (varDict s2) (mrsVar os) (prefixes os) (return $ p0 ++ [t1])
     
 -- Need a fix/verification:
