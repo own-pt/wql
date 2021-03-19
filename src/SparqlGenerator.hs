@@ -156,10 +156,67 @@ putPred (Predicate _ _ Nothing predicate _) epVar s = --No predicate modifiers
         s1 <- addingTriple
               (triple epVar (prefixes os!!2 .:. "hasPredicate") v)
               s
+        s2 <- putPredText v predText (return s1)
+        return s2
+putPred (Predicate _ _ (Just modf) predicate _) epVar s =
+  case predicate of
+    Nothing -> s
+    Just predText ->
+      do
+        os <- s
+        v <- var 
+        s1 <- addingTriple
+              (triple epVar (prefixes os!!2 .:. "hasPredicate") v)
+              s
+        s2 <- putPredTextMod v predText modf (return s1)
+        return s2
+
+
+putPredText :: QG.Variable -> Data.Pattern -> Query TransformData -> Query TransformData
+putPredText predicateVar predText s =
+  do
+    os <- s
+    if '*' `elem` predText
+      then
+      do
+        let newPredText = T.replace "*" ".*" $ T.pack predText
+        v <- var
+        s1 <- addingTriple
+              (triple predicateVar (prefixes os!!2 .:. "predText") v)
+              s
         s2 <- addingTriple
-              (triple v (prefixes os!!2 .:. "predText") (T.pack predText))
+              (filterExpr $ regex v  newPredText)
               (return s1)
         return s2
+      else
+      addingTriple
+      (triple predicateVar (prefixes os!!2 .:. "predText") (T.pack predText))
+      s
+
+putPredTextMod :: QG.Variable -> Data.Pattern -> Char -> Query TransformData -> Query TransformData
+putPredTextMod predicateVar predText modf s =
+  do
+    os <- s
+    if '*' `elem` predText
+      then
+      do
+        let newPredText = T.replace "*" ".*" $ T.pack predText
+        v <- var
+        s1 <- addingTriple
+              (triple predicateVar (prefixes os!!2 .:. f modf) v)
+              s
+        s2 <- addingTriple
+              (filterExpr $ regex v  newPredText)
+              (return s1)
+        return s2
+      else
+      addingTriple
+      (triple predicateVar (prefixes os!!2 .:. f modf) (T.pack predText))
+      s
+  where f modf = case modf of
+          '+' -> "hasLemma"
+          '/' -> "hasPos"
+          '=' -> "hasSense"
 
 processArgs :: Maybe [Arg] -> QG.Variable -> Query TransformData -> Query TransformData
 processArgs Nothing _ s = s
