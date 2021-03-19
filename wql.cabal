@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 025adf2b03912478a72bc887c52141515b4d221018f5761f60ef2e25602c532c
+-- hash: 1b425a214d56d9dad4cb0e2f95035187160ad525e8ceac9e10849691b92e118e
 
 name:           wql
 version:        0.1.0.0
@@ -30,7 +30,6 @@ library
       Data
       Lib
       SparqlGenerator
-      SparqlGenerator2
       WQL
   other-modules:
       Paths_wql
