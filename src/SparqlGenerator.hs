@@ -27,7 +27,8 @@ data TransformData = TransformData
   { varDict :: Query VariablesMap
   , mrsVar :: QG.Variable
   , prefixes :: [QG.Prefix]
-  , patterns :: Query [QG.Pattern] }
+  , patterns :: Query [QG.Pattern]
+  }
 
 wqlTransformation :: WQL -> Query SelectQuery
 wqlTransformation (WQL p Nothing) =
@@ -197,8 +198,7 @@ createVar varName s =
     os <- s
     dict <- varDict os
     if Map.member varName dict
-    then
-      s
+    then s
     else
       do
         v <- var
