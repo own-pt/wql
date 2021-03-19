@@ -10,62 +10,8 @@ import Database.HSparql.QueryGenerator as QG
 import qualified Data.Text as T
 import qualified Data.Map as Map
 import WQL
-import Control.Monad.Trans.State.Lazy
-
--- type VariablesMap = Map.Map Data.Variable (Control.Monad.Trans.State.Lazy.StateT
---        Database.HSparql.QueryGenerator.QueryData
---        Data.Functor.Identity.Identity
---        QG.Variable)
-
--- Making the Variables map:
-
---myLookup :: Data.Variable -> VariablesMap -> Query QG.Variable
-myLookup search dict =
-  case Map.lookup search dict of
-    Nothing -> do var
-    Just x -> x
-
-
---makeVars :: PredExpr -> VariablesMap
-makeVars pred = makeVarsAux pred Map.empty
-
---makeVarsAux :: PredExpr -> VariablesMap -> VariablesMap
-makeVarsAux (And pred1 pred2) dict =
-  makeVarsAux pred2 newDict
-  where
-    newDict = makeVarsAux pred1 dict
-makeVarsAux (Or pred1 pred2) dict =
-  makeVarsAux pred2 newDict
-  where
-    newDict = makeVarsAux pred1 dict
-makeVarsAux (Not pred) dict =
-  makeVarsAux pred dict
-makeVarsAux (P pred) dict =
-  makeVarsPred pred dict
-
--- makeVarsPred :: Predicate -> VariablesMap -> VariablesMap
-makeVarsPred (Predicate _ (Just vari) _ _ argList) dict =
-  makeVarsArgs argList newDict
-  where newDict = Map.insert vari (do QG.var) dict
-makeVarsPred (Predicate _ Nothing _ _ argList) dict =
-  makeVarsArgs argList dict
-  
-
--- makeVarsArgs :: Maybe [Arg] -> VariablesMap -> VariablesMap
-makeVarsArgs Nothing dict = dict
-makeVarsArgs (Just []) dict = dict
-makeVarsArgs (Just (x:xs)) dict =
-  makeVarsArgs (Just xs) newDict
-  where newDict = makeVarsArg x dict
-
-  
---makeVarsArg :: Arg -> VariablesMap -> VariablesMap
-makeVarsArg (Arg _ Nothing) dict =
-  dict
-makeVarsArg (Arg _ (Just x)) dict =
-  Map.insert x y dict
-  where y = do var
-
+import Control.Monad
+import Control.Monad.State
   
 -- now the SPARQL generator        
 mrs = prefix "mrs" (iriRef "http://www.delph-in.net/schema/mrs#")
@@ -75,95 +21,165 @@ rdf = prefix "rdf" (iriRef "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
 rdfs = prefix "rdfs" (iriRef "http://www.w3.org/2000/01/rdf-schema#")
 xsd = prefix "xsd" (iriRef "http://www.w3.org/2001/XMLSchema#")
 
+type VariablesMap = Map.Map Data.Variable QG.Variable 
+
+data TransformData = TransformData
+  { varDict :: Query VariablesMap
+  , mrsVar :: QG.Variable
+  , prefixes :: [QG.Prefix]
+  , patterns :: Query [QG.Pattern] }
 
 transformation :: PredExpr -> Query SelectQuery
 transformation pred =
   do
     mrs <- mrs ; erg <- erg; delph <- delph; rdf <- rdf; rdfs <- rdfs; xsd <- xsd
-    --erg <- prefix "erg" (iriRef "http://www.delph-in.net/schema/erg#")
-    -- delph <- prefix "delph" (iriRef "http://www.delph-in.net/schema/")
-    -- rdf <- prefix "rdf" (iriRef "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
-    -- rdfs <- prefix "rdfs" (iriRef "http://www.w3.org/2000/01/rdf-schema#")
-    -- xsd <- prefix "xsd" (iriRef "http://www.w3.org/2001/XMLSchema#")
 
     let prefixes = [mrs, erg, delph, rdf, rdfs, xsd]
     mrsVar <- var
     triple mrsVar (rdf .:. "type") (mrs .:. "MRS")
-    middleTransform pred mrsVar dict prefixes
-
+    s <- middleTransform pred $ return $ TransformData (return Map.empty) mrsVar prefixes (return [])
+    -- patterns s
     selectVars [mrsVar]
-  where dict = makeVars pred
 
-
---middleTransform :: PredExpr -> QG.Variable -> VariablesMap -> Query [QG.Pattern]
-middleTransform (P pred) mrsVar dict prefixes =
-  atomicTransform pred mrsVar dict prefixes
-middleTransform (And pred1 pred2) mrsVar dict prefixes =
+middleTransform :: PredExpr -> Query TransformData -> Query TransformData
+middleTransform (P pred) s =
+  atomicTransform pred s
+middleTransform (And pred1 pred2) s =
   do
-    listT1 <- middleTransform pred1 mrsVar dict prefixes
-    listT2 <- middleTransform pred2 mrsVar dict prefixes
-    return (listT1 ++ listT2)
-middleTransform (Or pred1 pred2) mrsVar dict prefixes =
+    os <- s
+    p0 <- patterns os
+    s1 <- middleTransform pred1 $ return $ TransformData (varDict os) (mrsVar os) (prefixes os) (return [])
+    s2 <- middleTransform pred2 $ return $ TransformData (varDict s1) (mrsVar os) (prefixes os) (return [])
+    p1 <- patterns s1
+    p2 <- patterns s2
+    return $ TransformData (varDict s2) (mrsVar os) (prefixes os) (return $ p0 ++ p1 ++ p2)
+    
+middleTransform (Or pred1 pred2) s =
   do
-    orPatterns <- union
-                  (middleTransform pred1 mrsVar dict prefixes)
-                  (middleTransform pred2 mrsVar dict prefixes)
-    return [orPatterns]
+    os <- s
+    p0 <- patterns os
+    s1 <- middleTransform pred1 $ return $ TransformData (varDict os) (mrsVar os) (prefixes os) (return [])
+    s2 <- middleTransform pred2 $ return $ TransformData (varDict s1) (mrsVar os) (prefixes os) (return [])
+    let p1 = patterns s1
+        p2 = patterns s2
+    t1 <- p1 `union` p2 -- p1 :: Pattern
+    return $ TransformData (varDict s2) (mrsVar os) (prefixes os) (return $ p0 ++ [t1])
     
 -- Need a fix/verification:
-middleTransform (Not pred) mrsVar dict prefixes =
+middleTransform (Not pred) s =
   do
-    notPattern <- filterNotExists $ middleTransform pred mrsVar dict prefixes
-    return [notPattern]
+    os <- s
+    p0 <- patterns os
+    s1 <- middleTransform pred $ return $ TransformData (varDict os) (mrsVar os) (prefixes os) (return [])
+    let p1 =  patterns s1
+    t1 <- filterNotExists p1
+    return $ TransformData (varDict s1) (mrsVar os) (prefixes os) (return $ p0 ++ [t1])
 
-  
--- atomicTransform ::
---   Predicate  -> QG.Variable -> VariablesMap -> Query [QG.Pattern]
-atomicTransform (Predicate _ (Just var_) Nothing (Just predText) Nothing) mrsVar dict prefixes =
+
+atomicTransform :: Predicate -> Query TransformData -> Query TransformData
+atomicTransform pred@(Predicate top Nothing predMod predPred argList) s =
   do
-    ep1Var <- myLookup var_ dict
-    pred1Var <- var
+    s1 <- s
+    epVar <- var
+    s2 <- addingTriple
+          (triple (mrsVar s1) (head (prefixes s1) .:. "hasEP") epVar)
+          (return s1)
+    s3 <- putTop pred epVar (return s2)
+    --Falta processar predicado direito; considerando predmod e regex.
+    s4 <- putPred pred epVar (return s3)
+    s5 <- processArgs argList epVar (return s4)
+    return s5
+
+
+atomicTransform pred@(Predicate top (Just epName) predMod predPred argList) s =
+  do
+    s1 <- createVar epName s
+    dict <- varDict s1
+    let Just epVar = Map.lookup epName dict
+    s2 <- addingTriple
+          (triple (mrsVar s1) (head (prefixes s1) .:. "hasEP") epVar)
+          (return s1)
+    s3 <- putTop pred epVar (return s2)
+    --Falta processar predicado direito; considerando predmod e regex.
+    s4 <- putPred pred epVar (return s3)
+    s5 <- processArgs argList epVar (return s4)
+    return s5
     
-    t1 <- triple mrsVar (head prefixes .:. "hasEP") ep1Var
-    t2 <- triple ep1Var (prefixes!!2 .:. "hasPredicate") pred1Var
-    t3 <- triple pred1Var (prefixes!!2 .:. "predText") (iriRef $ T.pack predText) -- não considera regex
-    --listArgsTuples <- processArgs argList ep1Var dict
-    return [t1, t2, t3]
-atomicTransform (Predicate _ (Just var_) Nothing (Just predText) (Just [])) mrsVar dict prefixes =
+putTop :: Predicate -> QG.Variable -> Query TransformData -> Query TransformData
+putTop predicate epVar s =
   do
-    ep1Var <- myLookup var_ dict
-    pred1Var <- var
-    
-    t1 <- triple mrsVar (head prefixes .:. "hasEP") ep1Var
-    t2 <- triple ep1Var (prefixes!!2 .:. "hasPredicate") pred1Var
-    t3 <- triple pred1Var (prefixes!!2 .:. "predText") (iriRef $ T.pack predText) -- não considera regex
-    return [t1, t2, t3]
-atomicTransform (Predicate _ (Just var_) Nothing (Just predText) argList) mrsVar dict prefixes =
-  do
-    ep1Var <- myLookup var_ dict
-    pred1Var <- var
-    
-    t1 <- triple mrsVar (head prefixes .:. "hasEP") ep1Var
-    t2 <- triple ep1Var (prefixes!!2 .:. "hasPredicate") pred1Var
-    t3 <- triple pred1Var (prefixes!!2 .:. "predText") (iriRef $ T.pack predText) -- não considera regex
-    t4 <- processArgs argList ep1Var dict prefixes
-    return (t1 : t2 : t3 : t4)  
+    os <- s
+    if predtop predicate
+    then
+      addingTriple (triple (mrsVar os) (prefixes os!!2 .:. "hasTop") epVar) s
+    else
+      s
 
---processArgs :: Maybe [Arg] -> QG.Variable -> VariablesMap -> Query [QG.Pattern]
-processArgs (Just [x]) epVar dict prefixes =
-  do
-    holeVar <- (case argvar x of
-                  Just y -> myLookup y dict
-                  Nothing -> var)
-    t1 <- triple epVar (head prefixes .:. T.toLower (T.pack $ rolepat x)) holeVar
-    return [t1]
-processArgs (Just (x:xs)) epVar dict prefixes =
-  do
-    holeVar <- (case argvar x of
-                  Just y -> myLookup y dict
-                  Nothing -> var)
-    t1 <- triple epVar (head prefixes .:. T.toLower (T.pack $ rolepat x)) holeVar
-    t2 <- processArgs (Just xs) epVar dict prefixes
-    return (t1 : t2)   
+putPred :: Predicate -> QG.Variable -> Query TransformData -> Query TransformData
+putPred (Predicate _ _ Nothing predicate _) epVar s = --No predicate modifiers
+  case predicate of
+    Nothing -> s
+    Just predText ->
+      do
+        os <- s
+        v <- var
+        s1 <- addingTriple
+              (triple epVar (prefixes os!!2 .:. "hasPredicate") v)
+              s
+        s2 <- addingTriple
+              (triple v (prefixes os!!2 .:. "predText") (T.pack predText))
+              (return s1)
+        return s2
 
+processArgs :: Maybe [Arg] -> QG.Variable -> Query TransformData -> Query TransformData
+processArgs Nothing _ s = s
+processArgs (Just []) _ s = s
+processArgs (Just [x]) epVar s =
+  processArg x epVar s
+processArgs (Just (x:xs)) epVar s =
+  do
+    s1 <- processArg x epVar s --Think of efficiency.
+    s2 <- processArgs (Just xs) epVar (return s1)
+    return s2
 
+processArg :: Arg -> QG.Variable -> Query TransformData -> Query TransformData
+processArg (Arg role Nothing) epVar s =
+  do
+    v <- var
+    os <- s
+    s1 <- addingTriple
+          (triple epVar (head (prefixes os) .:. T.pack role) v)
+          s
+    return s1
+processArg (Arg role (Just holeName)) epVar s =
+  do
+    s1 <- createVar holeName s
+    dict <- varDict s1
+    let Just v = Map.lookup holeName dict
+    s2 <- addingTriple
+          (triple epVar (head (prefixes s1) .:. T.pack role) v)
+          (return s1)
+    return s2
+
+createVar :: Data.Variable -> Query TransformData -> Query TransformData
+createVar varName s =
+  do
+    os <- s
+    dict <- varDict os
+    if Map.member varName dict
+    then
+      s
+    else
+      do
+        v <- var
+        return $ TransformData (return $ Map.insert varName v dict) (mrsVar os) (prefixes os) (patterns os)
+
+    -- v <- var
+    -- return $ TransformData (return $ Map.insert varName v dict) (mrsVar os) (prefixes os) (patterns os)
+
+addingTriple :: Query QG.Pattern -> Query TransformData -> Query TransformData
+addingTriple t s =
+  do
+    os <- s
+    return $ TransformData (varDict os) (mrsVar os) (prefixes os) (f <$> t <*> patterns os)
+    where f x xs = xs ++ [x]
