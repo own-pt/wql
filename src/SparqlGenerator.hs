@@ -38,7 +38,7 @@ transformation pred =
     mrsVar <- var
     triple mrsVar (rdf .:. "type") (mrs .:. "MRS")
     s <- middleTransform pred $ return $ TransformData (return Map.empty) mrsVar prefixes (return [])
-    patterns s
+    -- patterns s
     selectVars [mrsVar]
 
 middleTransform :: PredExpr -> Query TransformData -> Query TransformData
@@ -171,7 +171,7 @@ createVar varName s =
       s
     else
       do
-        v <- var;
+        v <- var
         return $ TransformData (return $ Map.insert varName v dict) (mrsVar os) (prefixes os) (patterns os)
 
     -- v <- var
@@ -181,4 +181,5 @@ addingTriple :: Query QG.Pattern -> Query TransformData -> Query TransformData
 addingTriple t s =
   do
     os <- s
-    return $ TransformData (varDict os) (mrsVar os) (prefixes os) ((:) <$> t <*> patterns os) 
+    return $ TransformData (varDict os) (mrsVar os) (prefixes os) (f <$> t <*> patterns os)
+    where f x xs = xs ++ [x]
