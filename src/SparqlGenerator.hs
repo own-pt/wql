@@ -29,18 +29,47 @@ data TransformData = TransformData
   , prefixes :: [QG.Prefix]
   , patterns :: Query [QG.Pattern] }
 
-transformation :: PredExpr -> Query SelectQuery
-transformation pred =
+wqlTransformation :: WQL -> Query SelectQuery
+wqlTransformation (WQL p Nothing) =
+  do
+    s <- predTransformation p
+    patterns s
+    selectVars [mrsVar s]
+    
+wqlTransformation (WQL p (Just xs)) =
+  do
+    s <- predTransformation p
+    s1 <- consTransformation xs $ return s
+    patterns s1
+    selectVars [mrsVar s]
+
+
+consTransformation :: [Cons] -> Query TransformData -> Query TransformData
+consTransformation [] s = s
+consTransformation (x : xs) s =
+  do
+    v <- var
+    s1 <- createVar (high x) s
+    s2 <- createVar (low x) (return s1)
+    dict <- varDict s2
+    let Just highVar = Map.lookup (high x) dict
+        Just lowVar = Map.lookup (low x) dict
+    s3 <- addingTriple (triple v (prefixes s1 !! 4 .:. "type") $ (head $ prefixes s1) .:. "Qeq") (return s2)
+    s4 <- addingTriple (triple v (head (prefixes s1) .:. "highHcons") $ highVar) (return s3)
+    s5 <- addingTriple (triple v (head (prefixes s1) .:. "lowHcons") lowVar) (return s4)
+    consTransformation xs (return s5)
+    
+  
+predTransformation :: PredExpr -> Query TransformData
+predTransformation pred =
   do
     mrs <- mrs ; erg <- erg; delph <- delph; rdf <- rdf; rdfs <- rdfs; xsd <- xsd
 
     let prefixes = [mrs, erg, delph, rdf, rdfs, xsd]
     mrsVar <- var
     triple mrsVar (rdf .:. "type") (mrs .:. "MRS")
-    s <- middleTransform pred $ return $ TransformData (return Map.empty) mrsVar prefixes (return [])
-    -- patterns s
-    selectVars [mrsVar]
-
+    middleTransform pred $ return $ TransformData (return Map.empty) mrsVar prefixes (return [])
+    
 middleTransform :: PredExpr -> Query TransformData -> Query TransformData
 middleTransform (P pred) s =
   atomicTransform pred s
@@ -161,6 +190,7 @@ processArg (Arg role (Just holeName)) epVar s =
           (return s1)
     return s2
 
+--This function don't create a new variable for one that already exists 
 createVar :: Data.Variable -> Query TransformData -> Query TransformData
 createVar varName s =
   do
@@ -183,3 +213,4 @@ addingTriple t s =
     os <- s
     return $ TransformData (varDict os) (mrsVar os) (prefixes os) (f <$> t <*> patterns os)
     where f x xs = xs ++ [x]
+
