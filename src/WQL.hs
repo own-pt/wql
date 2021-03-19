@@ -144,10 +144,10 @@ predExpr = do
 
 hconstraint :: ReadP Cons
 hconstraint = do
-  low <- variable
-  skipSpaces *> string "=q" <* skipSpaces
   high <- variable
-  return (Cons low high)
+  skipSpaces *> string "=q" <* skipSpaces
+  low <- variable
+  return (Cons high low)
 
 hconstraints :: ReadP [Cons]
 hconstraints = do
