@@ -89,23 +89,26 @@ middleTransform (And pred1 pred2) s =
 middleTransform (Or pred1 pred2) s =
   do
     os <- s
-    p0 <- patterns os
     s1 <- middleTransform pred1 $ return $ TransformData (varDict os) (mrsVar os) (prefixes os) (return [])
     s2 <- middleTransform pred2 $ return $ TransformData (varDict s1) (mrsVar os) (prefixes os) (return [])
-    let p1 = patterns s1
+    let p0 = patterns os
+        p1 = patterns s1
         p2 = patterns s2
-    t1 <- p1 `union` p2 -- p1 :: Pattern
-    return $ TransformData (varDict s2) (mrsVar os) (prefixes os) (return $ p0 ++ [t1])
+    return $ TransformData (varDict s2) (mrsVar os) (prefixes os) (f <$> p0 <*> union p1 p2)
+    where
+      f xs x = xs ++ [x]
     
 -- Need a fix/verification:
 middleTransform (Not pred) s =
   do
     os <- s
-    p0 <- patterns os
     s1 <- middleTransform pred $ return $ TransformData (varDict os) (mrsVar os) (prefixes os) (return [])
-    let p1 =  patterns s1
+    let p0 = patterns os
+        p1 = patterns s1
     t1 <- filterNotExists p1
-    return $ TransformData (varDict s1) (mrsVar os) (prefixes os) (return $ p0 ++ [t1])
+    return $ TransformData (varDict s1) (mrsVar os) (prefixes os) (f <$> p0 <*> filterNotExists p1)
+    where
+      f xs x = xs ++ [x]
 
 
 atomicTransform :: Predicate -> Query TransformData -> Query TransformData
