@@ -12,8 +12,7 @@ import qualified Data.Map as Map
 import WQL
 import Control.Monad
 import Control.Monad.State
-  
--- now the SPARQL generator        
+     
 mrs = prefix "mrs" (iriRef "http://www.delph-in.net/schema/mrs#")
 erg = prefix "erg" (iriRef "http://www.delph-in.net/schema/erg#")
 delph = prefix "delph" (iriRef "http://www.delph-in.net/schema/")
@@ -29,6 +28,8 @@ data TransformData = TransformData
   , prefixes :: [QG.Prefix]
   , patterns :: Query [QG.Pattern]
   }
+
+generateSPARQL = createSelectQuery . wqlTransformation . fst . last . readP_to_S wql 
 
 wqlTransformation :: WQL -> Query SelectQuery
 wqlTransformation (WQL p Nothing) =
@@ -77,12 +78,13 @@ middleTransform (P pred) s =
 middleTransform (And pred1 pred2) s =
   do
     os <- s
-    p0 <- patterns os
+    -- p0 <- patterns os
     s1 <- middleTransform pred1 $ return $ TransformData (varDict os) (mrsVar os) (prefixes os) (return [])
     s2 <- middleTransform pred2 $ return $ TransformData (varDict s1) (mrsVar os) (prefixes os) (return [])
-    p1 <- patterns s1
-    p2 <- patterns s2
-    return $ TransformData (varDict s2) (mrsVar os) (prefixes os) (return $ p0 ++ p1 ++ p2)
+    let p0 = patterns os
+        p1 = patterns s1
+        p2 = patterns s2
+    return $ TransformData (varDict s2) (mrsVar os) (prefixes os) ((++) <$> p0 <*> p1 *> p2)
     
 middleTransform (Or pred1 pred2) s =
   do
