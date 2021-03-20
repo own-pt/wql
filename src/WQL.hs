@@ -32,12 +32,12 @@ predVar = do
 
 rolePat :: ReadP Pattern
 rolePat = do
-  munch1 $ \c -> (isAlphaNum c || c == '*')
+  munch1 $ \c -> isAlphaNum c || c == '*'
 
 argument :: ReadP Arg
 argument = do
   rolePat_ <- rolePat
-  variable_ <- (fmap Just $ skipSpaces1 *> variable) <++ (return Nothing)
+  variable_ <- fmap Just (skipSpaces1 *> variable) <++ return Nothing
   return (Arg rolePat_ variable_)
 
 argSeparator :: ReadP Char
@@ -53,14 +53,14 @@ arglist = do
   return arglist_
 
 lemma = do
-  munch1 $ \c -> (not (elem c "?[]{}|!&_") && not (isSpace c))
+  munch1 $ \c -> c `notElem` "?[]{}|!&_" && not (isSpace c)
 pos = do
   underlinePos <- char '_'
-  charPos <- satisfy $ \c -> elem c "nvajrscpqxud"
+  charPos <- satisfy $ \c -> c `elem` "nvajrscpqxud"
   return [underlinePos, charPos]
 sense = do
   underlineSense <- option "" $ string "_"
-  sense <- munch1 $ \c -> (not (elem c "?[]{}|!&_") && not (isSpace c))
+  sense <- munch1 $ \c -> notElem c "?[]{}|!&_" && not (isSpace c)
   return (underlineSense ++ sense)
 
 predPat :: ReadP String
@@ -75,27 +75,25 @@ predPat = do
 predTop :: ReadP Bool
 predTop = do
   predTop_ <- char '^'
-  if predTop_ == '^'
-    then return True
-    else return False
-
+  return $ predTop_ == '^'
+  
 modifier :: ReadP Char
-modifier = satisfy $ \c -> elem c "+/="
+modifier = satisfy $ \c -> c `elem` "+/="
 
 predication1 :: ReadP PredExpr
 predication1 = do
-  predTop_ <- predTop <++ (return False)
-  predVar_ <- (fmap Just predVar) <++ (return Nothing)
-  modifier_ <- (fmap Just modifier) <++ (return Nothing)
-  predPat_ <- (fmap Just predPat)
-  arglist_ <- (fmap Just arglist) <++ (return Nothing)
+  predTop_ <- predTop <++ return False
+  predVar_ <- fmap Just predVar <++ return Nothing
+  modifier_ <- fmap Just modifier <++ return Nothing
+  predPat_ <- fmap Just predPat
+  arglist_ <- fmap Just arglist <++ return Nothing
   return (P $ Predicate predTop_ predVar_ modifier_ predPat_ arglist_)
 
 predication2 :: ReadP PredExpr
 predication2 = do
-  predVar_ <- (fmap Just predVar) <++ (return Nothing)
-  arglist_ <- (fmap Just arglist)
-  return (P $ Predicate False predVar_ Nothing Nothing arglist_)
+  predVar_ <- fmap Just predVar <++ return Nothing
+  arglist_ <- fmap Just arglist
+  return $ P $ Predicate False predVar_ Nothing Nothing arglist_
 
 predication :: ReadP PredExpr
 predication = do
@@ -165,7 +163,7 @@ wql = do
   skipSpaces
   predication_ <- predExpr
   skipSpaces
-  hconstraints_ <- (fmap Just hconstraints) <++ (return Nothing)
+  hconstraints_ <- fmap Just hconstraints <++ return Nothing
   skipSpaces
   return (WQL predication_ hconstraints_)
 
@@ -176,9 +174,9 @@ _pushNots (Not predx) = Not (_pushNots predx)
 _pushNots (Or predl predr) = Or (_pushNots predl) (_pushNots predr)
 _pushNots (And predl predr) = And (_pushNots predl) (_pushNots predr)
 -- NOTE: not-composite operators
-_pushNots (Not (Not p)) = _pushNots p
-_pushNots (Not (Or predl predr)) = And (_pushNots (Not predl)) (_pushNots (Not predr))
-_pushNots (Not (And predl predr)) = Or (_pushNots (Not predl)) (_pushNots (Not predr))
+-- _pushNots (Not (Not p)) = _pushNots p
+-- _pushNots (Not (Or predl predr)) = And (_pushNots (Not predl)) (_pushNots (Not predr))
+-- _pushNots (Not (And predl predr)) = Or (_pushNots (Not predl)) (_pushNots (Not predr))
 -- NOTE: every other case
 _pushNots predx = predx
   
