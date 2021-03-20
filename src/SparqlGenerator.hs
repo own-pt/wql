@@ -78,7 +78,6 @@ middleTransform (P pred) s =
 middleTransform (And pred1 pred2) s =
   do
     os <- s
-    -- p0 <- patterns os
     s1 <- middleTransform pred1 $ return $ TransformData (varDict os) (mrsVar os) (prefixes os) (return [])
     s2 <- middleTransform pred2 $ return $ TransformData (varDict s1) (mrsVar os) (prefixes os) (return [])
     let p0 = patterns os
@@ -120,7 +119,6 @@ atomicTransform pred@(Predicate top Nothing predMod predPred argList) s =
           (triple (mrsVar s1) (head (prefixes s1) .:. "hasEP") epVar)
           (return s1)
     s3 <- putTop pred epVar (return s2)
-    --Falta processar predicado direito; considerando predmod e regex.
     s4 <- putPred pred epVar (return s3)
     s5 <- processArgs argList epVar (return s4)
     return s5
@@ -135,7 +133,6 @@ atomicTransform pred@(Predicate top (Just epName) predMod predPred argList) s =
           (triple (mrsVar s1) (head (prefixes s1) .:. "hasEP") epVar)
           (return s1)
     s3 <- putTop pred epVar (return s2)
-    --Falta processar predicado direito; considerando predmod e regex.
     s4 <- putPred pred epVar (return s3)
     s5 <- processArgs argList epVar (return s4)
     return s5
@@ -265,9 +262,6 @@ createVar varName s =
       do
         v <- var
         return $ TransformData (return $ Map.insert varName v dict) (mrsVar os) (prefixes os) (patterns os)
-
-    -- v <- var
-    -- return $ TransformData (return $ Map.insert varName v dict) (mrsVar os) (prefixes os) (patterns os)
 
 addingTriple :: Query QG.Pattern -> Query TransformData -> Query TransformData
 addingTriple t s =
