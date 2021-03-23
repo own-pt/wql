@@ -31,6 +31,9 @@ data TransformData = TransformData
 
 generateSPARQL = createSelectQuery . wqlTransformation . fst . last . readP_to_S wql 
 
+generateOptSPARQL = createSelectQuery . wqlTransformation . pushNots . fst . last . readP_to_S wql 
+
+
 wqlTransformation :: WQL -> Query SelectQuery
 wqlTransformation (WQL p Nothing) =
   do
@@ -57,7 +60,7 @@ consTransformation (x : xs) s =
     let Just highVar = Map.lookup (high x) dict
         Just lowVar = Map.lookup (low x) dict
     s3 <- addingTriple (triple v (prefixes s1 !! 4 .:. "type") $ (head $ prefixes s1) .:. "Qeq") (return s2)
-    s4 <- addingTriple (triple v (head (prefixes s1) .:. "highHcons") $ highVar) (return s3)
+    s4 <- addingTriple (triple v (head (prefixes s1) .:. "highHcons") highVar) (return s3)
     s5 <- addingTriple (triple v (head (prefixes s1) .:. "lowHcons") lowVar) (return s4)
     consTransformation xs (return s5)
     
@@ -233,23 +236,47 @@ processArgs (Just (x:xs)) epVar s =
 
 processArg :: Arg -> QG.Variable -> Query TransformData -> Query TransformData
 processArg (Arg role Nothing) epVar s =
-  do
-    v <- var
-    os <- s
-    s1 <- addingTriple
+  if '*' `elem` role
+      then
+      do
+        let newRoleText = T.replace "*" ".*" $ T.pack role
+        v <- var
+        roleV <- var
+        s1 <- addingTriple
+              (triple epVar roleV v)
+              s
+        addingTriple
+          (filterExpr $ regex roleV newRoleText)
+          (return s1)
+      else
+      do
+        v <- var
+        os <- s
+        addingTriple
           (triple epVar (head (prefixes os) .:. T.pack role) v)
           s
-    return s1
+      
 processArg (Arg role (Just holeName)) epVar s =
   do
     s1 <- createVar holeName s
     dict <- varDict s1
     let Just v = Map.lookup holeName dict
-    s2 <- addingTriple
-          (triple epVar (head (prefixes s1) .:. T.pack role) v)
+    if '*' `elem` role
+      then
+      do
+        let newRoleText = T.replace "*" ".*" $ T.pack role
+        roleV <- var
+        s1 <- addingTriple
+              (triple epVar roleV v)
+              s
+        addingTriple
+          (filterExpr $ regex roleV newRoleText)
           (return s1)
-    return s2
-
+      else
+      addingTriple
+      (triple epVar (head (prefixes s1) .:. T.pack role) v)
+      (return s1)
+        
 --This function don't create a new variable for one that already exists 
 createVar :: Data.Variable -> Query TransformData -> Query TransformData
 createVar varName s =
