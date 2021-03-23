@@ -59,7 +59,7 @@ consTransformation (x : xs) s =
     dict <- varDict s2
     let Just highVar = Map.lookup (high x) dict
         Just lowVar = Map.lookup (low x) dict
-    s3 <- addingTriple (triple v (prefixes s1 !! 4 .:. "type") $ (head $ prefixes s1) .:. "Qeq") (return s2)
+    s3 <- addingTriple (triple v (prefixes s1 !! 4 .:. "type") $ head (prefixes s1) .:. "Qeq") (return s2)
     s4 <- addingTriple (triple v (head (prefixes s1) .:. "highHcons") highVar) (return s3)
     s5 <- addingTriple (triple v (head (prefixes s1) .:. "lowHcons") lowVar) (return s4)
     consTransformation xs (return s5)
@@ -239,7 +239,7 @@ processArg (Arg role Nothing) epVar s =
   if '*' `elem` role
       then
       do
-        let newRoleText = T.replace "*" ".*" $ T.pack role
+        let newRoleText = T.replace "*" ".*" $ (T.toLower . T.pack) role
         v <- var
         roleV <- var
         s1 <- addingTriple
@@ -253,7 +253,7 @@ processArg (Arg role Nothing) epVar s =
         v <- var
         os <- s
         addingTriple
-          (triple epVar (head (prefixes os) .:. T.pack role) v)
+          (triple epVar (head (prefixes os) .:. (T.toLower . T.pack) role) v)
           s
       
 processArg (Arg role (Just holeName)) epVar s =
@@ -264,7 +264,7 @@ processArg (Arg role (Just holeName)) epVar s =
     if '*' `elem` role
       then
       do
-        let newRoleText = T.replace "*" ".*" $ T.pack role
+        let newRoleText = T.replace "*" ".*" $ (T.toLower . T.pack) role
         roleV <- var
         s1 <- addingTriple
               (triple epVar roleV v)
@@ -274,7 +274,7 @@ processArg (Arg role (Just holeName)) epVar s =
           (return s1)
       else
       addingTriple
-      (triple epVar (head (prefixes s1) .:. T.pack role) v)
+      (triple epVar (head (prefixes s1) .:. (T.toLower . T.pack) role) v)
       (return s1)
         
 --This function don't create a new variable for one that already exists 
