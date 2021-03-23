@@ -100,14 +100,12 @@ middleTransform (Or pred1 pred2) s =
     where
       f xs x = xs ++ [x]
     
--- Need a fix/verification:
 middleTransform (Not pred) s =
   do
     os <- s
     s1 <- middleTransform pred $ return $ TransformData (varDict os) (mrsVar os) (prefixes os) (return [])
     let p0 = patterns os
         p1 = patterns s1
-    t1 <- filterNotExists p1
     return $ TransformData (varDict s1) (mrsVar os) (prefixes os) (f <$> p0 <*> filterNotExists p1)
     where
       f xs x = xs ++ [x]
