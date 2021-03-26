@@ -259,21 +259,25 @@ processArg (Arg role (Just holeName)) epVar s =
     s1 <- createVar holeName s
     dict <- varDict s1
     let Just v = Map.lookup holeName dict
-    if '*' `elem` role
-      then
-      do
-        let newRoleText = T.replace "*" ".*" $ (T.toLower . T.pack) role
-        roleV <- var
-        s1 <- addingTriple
-              (triple epVar roleV v)
-              s
-        addingTriple
-          (filterExpr $ regex roleV newRoleText)
-          (return s1)
-      else
-      addingTriple
-      (triple epVar (head (prefixes s1) .:. (T.toLower . T.pack) role) v)
-      (return s1)
+    case role of
+      "*" -> addingTriple
+             (triple epVar (head (prefixes s1) .:. T.pack "role") v)
+             (return s1)
+      _ -> if '*' `elem` role
+           then
+             do
+               let newRoleText = T.replace "*" ".*" $ (T.toLower . T.pack) role
+               roleV <- var
+               s1 <- addingTriple
+                     (triple epVar roleV v)
+                     s
+               addingTriple
+                 (filterExpr $ regex roleV newRoleText)
+                 (return s1)
+           else
+             addingTriple
+             (triple epVar (head (prefixes s1) .:. (T.toLower . T.pack) role) v)
+             (return s1)
         
 --This function don't create a new variable for one that already exists 
 createVar :: Data.Variable -> Query TransformData -> Query TransformData
