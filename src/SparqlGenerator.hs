@@ -59,7 +59,8 @@ consTransformation (x : xs) s =
     dict <- varDict s2
     let Just highVar = Map.lookup (high x) dict
         Just lowVar = Map.lookup (low x) dict
-    s3 <- addingTriple (triple v (prefixes s1 !! 4 .:. "type") $ head (prefixes s1) .:. "Qeq") (return s2)
+    s3 <- addingTriple (triple v (prefixes s1 !! 3 .:. "type") $ head (prefixes s1) .:. "Qeq") (return s2)
+    s4 <- addingTriple (triple (mrsVar s1) (head (prefixes s1) .:. "hasHcons") v) (return s3)
     s4 <- addingTriple (triple v (head (prefixes s1) .:. "highHcons") highVar) (return s3)
     s5 <- addingTriple (triple v (head (prefixes s1) .:. "lowHcons") lowVar) (return s4)
     consTransformation xs (return s5)
@@ -144,7 +145,15 @@ putTop predicate epVar s =
     os <- s
     if predtop predicate
     then
-      addingTriple (triple (mrsVar os) (prefixes os!!2 .:. "hasTop") epVar) s
+      do
+        topH <- var
+        s1 <- addingTriple (triple (mrsVar os) (prefixes os!!2 .:. "hasTop") topH) s
+        -- hardcoding the creating of the hcons, review later
+        hconsVar <- var
+        s2 <- addingTriple (triple hconsVar (prefixes os!!3 .:. "type") (head (prefixes os) .:. "Qeq")) (return s1)
+        s3 <- addingTriple (triple (mrsVar os) (head(prefixes os) .:. "hasHcons") hconsVar) (return s2)
+        s4 <- addingTriple (triple hconsVar (head(prefixes os) .:. "highHcons") topH) (return s3)
+        addingTriple (triple hconsVar (head(prefixes os) .:. "lowHcons") epVar) (return s4)
     else
       s
 
@@ -279,7 +288,7 @@ processArg (Arg role (Just holeName)) epVar s =
              (triple epVar (head (prefixes s1) .:. (T.toLower . T.pack) role) v)
              (return s1)
         
---This function don't create a new variable for one that already exists 
+-- This function don't create a new variable for one that already exists 
 createVar :: Data.Variable -> Query TransformData -> Query TransformData
 createVar varName s =
   do

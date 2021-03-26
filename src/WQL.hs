@@ -168,14 +168,12 @@ wql = do
 
 {- OPTIMIZATIONS -}
 _pushNots :: PredExpr -> PredExpr
--- NOTE: simple operators
---_pushNots (Not predx) = Not (_pushNots predx)
---_pushNots (Or predl predr) = Or (_pushNots predl) (_pushNots predr)
---_pushNots (And predl predr) = And (_pushNots predl) (_pushNots predr)
--- NOTE: not-composite operators
 _pushNots (Not (Not p)) = _pushNots p
 _pushNots (Not (Or predl predr)) = And (_pushNots (Not predl)) (_pushNots (Not predr))
 _pushNots (Not (And predl predr)) = Or (_pushNots (Not predl)) (_pushNots (Not predr))
+_pushNots (Or predl predr) = Or (_pushNots predl) (_pushNots predr)
+_pushNots (And predl predr) = And (_pushNots predl) (_pushNots predr)
+
 -- NOTE: every other case
 _pushNots predx = predx
   
