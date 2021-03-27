@@ -59,12 +59,10 @@ consTransformation (Just (x : xs)) s =
     dict <- varDict os
     let Just highVar = Map.lookup (high x) dict
         Just lowVar = Map.lookup (low x) dict
-        s1 = addingTriple (triple v (prefixes os !! 3 .:. "type") $ head (prefixes os) .:. "Qeq") s
-        s2 = addingTriple (triple (mrsVar os) (head (prefixes os) .:. "hasHcons") v) s1
-        s3 = addingTriple (triple v (head (prefixes os) .:. "highHcons") highVar) s2
-        s4 = addingTriple (triple v (head (prefixes os) .:. "lowHcons") lowVar) s3
-    consTransformation (Just xs) s4
-consTransformation _ s = s
+    s3 <- addingTriple (triple v (prefixes s1 !! 4 .:. "type") $ head (prefixes s1) .:. "Qeq") (return s2)
+    s4 <- addingTriple (triple v (head (prefixes s1) .:. "highHcons") highVar) (return s3)
+    s5 <- addingTriple (triple v (head (prefixes s1) .:. "lowHcons") lowVar) (return s4)
+    consTransformation xs (return s5)
   
 predExprTransformation :: PredExpr -> Query TransformData -> Query TransformData
 predExprTransformation (P pred) s =
@@ -173,21 +171,29 @@ processArgs (Just ((Arg role (Just holeName)):xs)) epVar s =
     os <- s
     dict <- varDict os
     let Just v = Map.lookup holeName dict
-    let s1 = case role of
-               "*" -> addingTriple (triple epVar (head (prefixes os) .:. T.pack "role") v) s
-               _ -> if '*' `elem` role
-                    then
-                      do
-                        roleV <- var
-                        let newRoleText = T.replace "*" ".*" $ (T.toLower . T.pack) role
-                            s11 = addingTriple (triple epVar roleV v) s
-                            s12 = addingTriple (filterExpr $ regex roleV newRoleText) s11
-                        s12
-                    else
-                      addingTriple (triple epVar (head (prefixes os) .:. (T.toLower . T.pack) role) v) s
-        s2 = processArgs (Just xs) epVar s1
-    s2
-processArgs (Just ((Arg role Nothing):xs)) epVar s =
+    case role of
+      "*" -> addingTriple
+             (triple epVar (head (prefixes s1) .:. T.pack "role") v)
+             (return s1)
+      _ -> if '*' `elem` role
+           then
+             do
+               let newRoleText = T.replace "*" ".*" $ (T.toLower . T.pack) role
+               roleV <- var
+               s1 <- addingTriple
+                     (triple epVar roleV v)
+                     s
+               addingTriple
+                 (filterExpr $ regex roleV newRoleText)
+                 (return s1)
+           else
+             addingTriple
+             (triple epVar (head (prefixes s1) .:. (T.toLower . T.pack) role) v)
+             (return s1)
+        
+--This function don't create a new variable for one that already exists 
+createVar :: Data.Variable -> Query TransformData -> Query TransformData
+createVar varName s =
   do
     os <- s
     dict <- varDict os
