@@ -51,7 +51,6 @@ wqlTransformation w@(WQL p h) =
     patterns s1
     selectVars [mrsVar]
 
-
 consTransformation :: Maybe [Cons] -> Query TransformData -> Query TransformData
 consTransformation (Just (x : xs)) s =
   do
@@ -141,7 +140,7 @@ putTop predicate epVar s =
       s
 
 putPred :: Predicate -> QG.Variable -> Query TransformData -> Query TransformData
-putPred (Predicate _ _ modf (Just predText) _) epVar s = --No predicate modifiers
+putPred (Predicate _ _ modf (Just predText) _) epVar s = 
   do
     os <- s
     v <- var
@@ -170,11 +169,11 @@ putPredText predicateVar predText modf s =
       addingTriple (triple predicateVar (prefixes os!!2 .:. "predText") (T.pack predText)) s
 
 processArgs :: Maybe [Arg] -> QG.Variable -> Query TransformData -> Query TransformData
-processArgs (Just ((Arg role Nothing):xs)) epVar s =
+processArgs (Just ((Arg role (Just holeName)):xs)) epVar s =
   do
     os <- s
     dict <- varDict os
-    v <- var
+    let Just v = Map.lookup holeName dict
     let s1 = case role of
                "*" -> addingTriple (triple epVar (head (prefixes os) .:. T.pack "role") v) s
                _ -> if '*' `elem` role
@@ -189,11 +188,11 @@ processArgs (Just ((Arg role Nothing):xs)) epVar s =
                       addingTriple (triple epVar (head (prefixes os) .:. (T.toLower . T.pack) role) v) s
         s2 = processArgs (Just xs) epVar s1
     s2
-processArgs (Just ((Arg role (Just holeName)):xs)) epVar s =
+processArgs (Just ((Arg role Nothing):xs)) epVar s =
   do
     os <- s
     dict <- varDict os
-    let Just v = Map.lookup holeName dict
+    v <- var
     let s1 = case role of
                "*" -> addingTriple (triple epVar (head (prefixes os) .:. T.pack "role") v) s
                _ -> if '*' `elem` role
@@ -267,5 +266,3 @@ _createVar (Just varName) dict =
         qv <- var
         return $ Map.insert varName qv d
 _createVar _ dict = dict
-
-
