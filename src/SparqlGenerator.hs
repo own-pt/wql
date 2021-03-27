@@ -99,27 +99,26 @@ predExprTransformation (Not pred) s =
 
 
 atomicTransform :: Predicate -> Query TransformData -> Query TransformData
-atomicTransform pred@(Predicate top Nothing predMod predPred argList) s =
+atomicTransform pred@(Predicate _ (Just epName) _ _ _) s =
   do
-    os <- s
-    epVar <- var
-    let s1 = addingTriple (triple (mrsVar os) (head (prefixes os) .:. "hasEP") epVar) s
-        s2 = putTop pred epVar s1
-        s3 = putPred pred epVar s2
-        s4 = processArgs argList epVar s3
-    s4
-
-atomicTransform pred@(Predicate top (Just epName) predMod predPred argList) s =
-  do
-    os <- s
-    dict <- varDict os
+    dict <- s >>= varDict 
     let Just epVar = Map.lookup epName dict
+    _atomicTransform pred epVar s
+atomicTransform pred s =
+  do
+    epVar <- var
+    _atomicTransform pred epVar s
+
+_atomicTransform :: Predicate -> QG.Variable -> Query TransformData -> Query TransformData
+_atomicTransform pred epVar s =
+  do
+    os <- s
     let s1 = addingTriple (triple (mrsVar os) (head (prefixes os) .:. "hasEP") epVar) s
         s2 = putTop pred epVar s1
         s3 = putPred pred epVar s2
-        s4 = processArgs argList epVar s3
-    s4
-
+        s4 = processArgs (predargs pred) epVar s3 in
+     s4
+  
 -- hardcoding the creating of the hcons, review later
 putTop :: Predicate -> QG.Variable -> Query TransformData -> Query TransformData
 putTop predicate epVar s =
