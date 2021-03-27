@@ -33,25 +33,21 @@ generateSPARQL = createSelectQuery . wqlTransformation . fst . last . readP_to_S
 
 generateOptSPARQL = createSelectQuery . wqlTransformation . pushNots . fst . last . readP_to_S wql 
 
-
-wqlTransformation :: WQL -> Query SelectQuery
-wqlTransformation (WQL p Nothing) =
+wqlTransformation :: WQL -> Query SelectQuery    
+wqlTransformation w@(WQL p h) =
   do
-    s <- predTransformation p
-    patterns s
-    selectVars [mrsVar s]
-    
-wqlTransformation (WQL p (Just xs)) =
-  do
-    s <- predTransformation p
-    s1 <- consTransformation xs $ return s
+    mrs <- mrs ; erg <- erg; delph <- delph; rdf <- rdf; rdfs <- rdfs; xsd <- xsd
+    let prefixes = [mrs, erg, delph, rdf, rdfs, xsd]
+    mrsVar <- var
+    triple mrsVar (rdf .:. "type") (mrs .:. "MRS")
+    s <- predTransformation p $ return $ TransformData (createVarsWQL w) mrsVar prefixes (return [])
+    s1 <- consTransformation h $ return s
     patterns s1
-    selectVars [mrsVar s]
+    selectVars [mrsVar]
 
 
-consTransformation :: [Cons] -> Query TransformData -> Query TransformData
-consTransformation [] s = s
-consTransformation (x : xs) s =
+consTransformation :: Maybe [Cons] -> Query TransformData -> Query TransformData
+consTransformation (Just (x : xs)) s =
   do
     v <- var
     s1 <- createVar (high x) s
@@ -63,18 +59,11 @@ consTransformation (x : xs) s =
     s4 <- addingTriple (triple (mrsVar s1) (head (prefixes s1) .:. "hasHcons") v) (return s3)
     s4 <- addingTriple (triple v (head (prefixes s1) .:. "highHcons") highVar) (return s3)
     s5 <- addingTriple (triple v (head (prefixes s1) .:. "lowHcons") lowVar) (return s4)
-    consTransformation xs (return s5)
-    
+    consTransformation (Just xs) (return s5)
+consTransformation _ s = s
   
-predTransformation :: PredExpr -> Query TransformData
-predTransformation pred =
-  do
-    mrs <- mrs ; erg <- erg; delph <- delph; rdf <- rdf; rdfs <- rdfs; xsd <- xsd
-
-    let prefixes = [mrs, erg, delph, rdf, rdfs, xsd]
-    mrsVar <- var
-    triple mrsVar (rdf .:. "type") (mrs .:. "MRS")
-    middleTransform pred $ return $ TransformData (return Map.empty) mrsVar prefixes (return [])
+predTransformation :: PredExpr -> Query TransformData -> Query TransformData
+predTransformation pred s = middleTransform pred s
     
 middleTransform :: PredExpr -> Query TransformData -> Query TransformData
 middleTransform (P pred) s =
@@ -307,4 +296,57 @@ addingTriple t s =
     os <- s
     return $ TransformData (varDict os) (mrsVar os) (prefixes os) (f <$> t <*> patterns os)
     where f x xs = xs ++ [x]
+
+-- Creating the map of WQL variables and SPARQL variables beforehand:
+createVarsWQL :: WQL -> Query VariablesMap
+createVarsWQL (WQL p h) = dict2
+  where
+    dict1 = _createVarsPredExpr p $ return Map.empty
+    dict2 = _createVarsHcons h dict1
+  
+_createVarsPredExpr :: PredExpr -> Query VariablesMap -> Query VariablesMap
+_createVarsPredExpr (P pred) dict = _createVarsPred pred dict
+_createVarsPredExpr (Not pred) dict = _createVarsPredExpr pred dict
+_createVarsPredExpr (And pred1 pred2) dict = dict2
+  where
+    dict1 = _createVarsPredExpr pred1 dict
+    dict2 = _createVarsPredExpr pred2 dict1
+_createVarsPredExpr (Or pred1 pred2) dict = dict2
+  where
+    dict1 = _createVarsPredExpr pred1 dict
+    dict2 = _createVarsPredExpr pred2 dict1
+    
+_createVarsPred :: Predicate -> Query VariablesMap -> Query VariablesMap
+_createVarsPred (Predicate _ predVar _ _ argList) dict = dict2
+  where
+    dict1 =  _createVar predVar dict
+    dict2 =  _createVarsArgs argList dict1
+
+_createVarsArgs :: Maybe [Arg] -> Query VariablesMap -> Query VariablesMap
+_createVarsArgs (Just ((Arg _ varName):xs)) dict = dict2
+  where
+    dict1 = _createVar varName dict
+    dict2 = _createVarsArgs (Just xs) dict1
+_createVarsArgs _ dict = dict
+
+_createVarsHcons :: Maybe [Cons] -> Query VariablesMap -> Query VariablesMap
+_createVarsHcons (Just ((Cons hvar lvar):xs)) dict = dict3
+  where
+    dict1 = _createVar (Just hvar) dict
+    dict2 = _createVar (Just lvar) dict1
+    dict3 = _createVarsHcons (Just xs) dict2    
+_createVarsHcons _ dict = dict
+
+_createVar :: Maybe Data.Variable -> Query VariablesMap -> Query VariablesMap
+_createVar (Just varName) dict =
+  do
+    d <- dict
+    if Map.member varName d
+    then dict
+    else
+      do
+        qv <- var
+        return $ Map.insert varName qv d
+_createVar _ dict = dict
+
 
