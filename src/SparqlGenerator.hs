@@ -12,11 +12,11 @@ import qualified Data.Map as Map
 import WQL
      
 mrs = prefix "mrs" (iriRef "http://www.delph-in.net/schema/mrs#")
-erg = prefix "erg" (iriRef "http://www.delph-in.net/schema/erg#")
+--erg = prefix "erg" (iriRef "http://www.delph-in.net/schema/erg#")
 delph = prefix "delph" (iriRef "http://www.delph-in.net/schema/")
 rdf = prefix "rdf" (iriRef "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
 rdfs = prefix "rdfs" (iriRef "http://www.w3.org/2000/01/rdf-schema#")
-xsd = prefix "xsd" (iriRef "http://www.w3.org/2001/XMLSchema#")
+--xsd = prefix "xsd" (iriRef "http://www.w3.org/2001/XMLSchema#")
 
 type VariablesMap = Map.Map Data.Variable QG.Variable 
 
@@ -34,8 +34,8 @@ generateOptSPARQL = createSelectQuery . wqlTransformation . pushNots . fst . las
 wqlTransformation :: WQL -> Query SelectQuery    
 wqlTransformation w@(WQL p h) =
   do
-    mrs <- mrs ; erg <- erg; delph <- delph; rdf <- rdf; rdfs <- rdfs; xsd <- xsd
-    let prefixes = [mrs, erg, delph, rdf, rdfs, xsd]
+    mrs <- mrs ; delph <- delph; rdf <- rdf; rdfs <- rdfs
+    let prefixes = [mrs, delph, rdf, rdfs]
     mrsVar <- var
     let
       s = predExprTransformation
@@ -61,19 +61,19 @@ consTransformation (Just (x : xs)) s =
         s3 = addingTriple
              (triple
                v
-               (prefixes s2 !! 4 .:. "type")
-               (head (prefixes s2) .:. "Qeq"))
+               (prefixes s2 !! 2 .:. "type")
+               (prefixes s2 !! 0 .:. "Qeq"))
              (return s2)
         s4 = addingTriple
              (triple
                v
-               (head (prefixes s2) .:. "highHcons")
+               (prefixes s2 !! 0 .:. "highHcons")
                highVar)
              s3
         s5 = addingTriple
              (triple
                v
-               (head (prefixes s2) .:. "lowHcons")
+               (prefixes s2 !! 0 .:. "lowHcons")
                lowVar)
              s4
     consTransformation (Just xs) s5
@@ -117,7 +117,12 @@ atomicTransform pred@(Predicate _ (Just epName) _ _ _) s =
     s1 <- createVar epName s
     dict <- varDict s1
     let Just epVar = Map.lookup epName dict
-        s2 = addingTriple (triple (mrsVar s1) (head (prefixes s1) .:. "hasEP") epVar) (return s1)
+        s2 = addingTriple
+             (triple
+               (mrsVar s1)
+               (prefixes s1 !! 0 .:. "hasEP")
+               epVar)
+             (return s1)
         s3 = putTop pred epVar s2
         s4 = putPred pred epVar s3
         s5 = processArgs (predargs pred) epVar s4
@@ -129,7 +134,7 @@ atomicTransform pred s =
     let s1 = addingTriple
              (triple
                (mrsVar os)
-               (head (prefixes os) .:. "hasEP")
+               (prefixes os !! 0 .:. "hasEP")
                epVar)
              s
         s2 = putTop pred epVar s1
@@ -151,7 +156,7 @@ putTop predicate epVar s =
         let s1 = addingTriple
                  (triple
                    (mrsVar os)
-                   (prefixes os!!2 .:. "hasTop")
+                   (prefixes os!!1 .:. "hasTop")
                    topH)
                  s
             s2 = addingTriple
@@ -196,7 +201,7 @@ putPred (Predicate _ _ modf (Just predText) _) epVar s =
     let s1 = addingTriple
              (triple
                epVar
-               (prefixes os!!2 .:. "hasPredicate")
+               (prefixes os!!1 .:. "hasPredicate")
                v)
              s
         s2 = putPredText v predText modf s1
@@ -213,11 +218,31 @@ putPredText predicateVar predText modf s =
         v <- var
         let newPredText = T.replace "*" ".*" $ T.pack predText
         s1 <- case modf of
-                Nothing -> addingTriple (triple predicateVar (prefixes os!!2 .:. "predText") v) s
-                Just '+' -> addingTriple (triple predicateVar (prefixes os!!2 .:. "hasLemma") v) s
-                Just '/' -> addingTriple (triple predicateVar (prefixes os!!2 .:. "hasPos") v) s
-                Just '=' -> addingTriple (triple predicateVar (prefixes os!!2 .:. "hasSense") v) s
-        addingTriple (filterExpr $ regex v  newPredText) (return s1)
+                Nothing -> addingTriple
+                           (triple
+                             predicateVar
+                             (prefixes os!!1 .:. "predText")
+                             v)
+                           s
+                Just '+' -> addingTriple
+                            (triple predicateVar
+                              (prefixes os!!1 .:. "hasLemma")
+                              v) 
+                            s
+                Just '/' -> addingTriple
+                            (triple predicateVar
+                              (prefixes os!!1 .:. "hasPos")
+                              v) --review this case; depends on delphin-rdf
+                            s
+                Just '=' -> addingTriple
+                            (triple
+                              predicateVar
+                              (prefixes os!!2 .:. "hasSense")
+                              v)
+                            s
+        addingTriple
+          (filterExpr $ regex v newPredText)
+          (return s1)
       else
       addingTriple (triple predicateVar (prefixes os!!2 .:. "predText") (T.pack predText)) s
 
