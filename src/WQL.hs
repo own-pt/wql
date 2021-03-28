@@ -10,6 +10,12 @@ import Data
 
 {- PREDICATION PARSER -}
 
+-- Recreating optional for maximal "munch"
+optionL :: ReadP a -> a -> ReadP a
+-- ^ @optionL p x@ will parse @p@ and will return @x@ without consuming
+--   any input if it fails
+optionL p x = p <++ return x
+
 satisfySpaces :: Char -> ReadP Char
 satisfySpaces c = 
   skipSpaces *> char c <* skipSpaces
@@ -35,7 +41,7 @@ rolePat =
 argument :: ReadP Arg
 argument = do
   rolePat_ <- rolePat
-  variable_ <- fmap Just (skipSpaces1 *> variable) <++ return Nothing
+  variable_ <- optionL (Just <$> (skipSpaces1 *> variable)) Nothing
   return $ Arg rolePat_ variable_
 
 argSeparator :: ReadP Char
@@ -63,12 +69,13 @@ sense = do
 
 predPat :: ReadP String
 predPat = do
-  under_ <- string "_" <++ return ""
+  under_ <- optionL (string "_") ""
   lemma_ <- lemma
-  pos_ <- pos <++ return ""
-  sense_ <- sense <++ return ""
-  rel_ <- string "_rel" <++ return ""
-  return (under_ ++ lemma_ ++ pos_ ++ sense_)
+  pos_ <- optionL pos  ""
+  sense_ <- optionL sense ""
+  rel_ <- optionL (string "_rel") "" 
+  return $ under_ ++ lemma_ ++ pos_ ++ sense_ 
+-- normalized predicate on pydelphin exclude "_rel"
 
 predTop :: ReadP Bool
 predTop = do
@@ -80,39 +87,36 @@ modifier = satisfy $ \c -> c `elem` "+/="
 
 predication1 :: ReadP PredExpr
 predication1 = do
-  predTop_ <- predTop <++ return False
-  predVar_ <- fmap Just predVar <++ return Nothing
-  modifier_ <- fmap Just modifier <++ return Nothing
-  predPat_ <- fmap Just predPat
-  arglist_ <- fmap Just arglist <++ return Nothing
+  predTop_ <- optionL predTop False
+  predVar_ <- optionL (Just <$> predVar) Nothing
+  modifier_ <- optionL (Just <$> modifier) Nothing
+  predPat_ <- Just <$> predPat
+  arglist_ <- optionL (Just <$> arglist) Nothing
   return (P $ Predicate predTop_ predVar_ modifier_ predPat_ arglist_)
 
 predication2 :: ReadP PredExpr
 predication2 = do
-  predTop_ <- predTop <++ return False
-  predVar_ <- fmap Just predVar <++ return Nothing
-  arglist_ <- fmap Just arglist
+  predTop_ <- optionL predTop False
+  predVar_ <- optionL (Just <$> predVar) Nothing
+  arglist_ <- Just <$> arglist
   return $ P $ Predicate False predVar_ Nothing Nothing arglist_
 
 predication :: ReadP PredExpr
-predication = do
+predication = 
   predication1 <|> predication2
   
 {- LOGIGAL OPERATORS -}
 
 parExpr :: ReadP PredExpr
 parExpr = do
-  char '('
-  skipSpaces
+  char '(' <* skipSpaces
   expression <- predExpr
-  skipSpaces
-  char ')'
+  skipSpaces *> char ')'
   return expression
 
 notExpr :: ReadP PredExpr
 notExpr = do
-  char '!'
-  skipSpaces
+  char '!' <* skipSpaces
   expression <- predication <|> parExpr <|> notExpr
   return (Not expression)
 
@@ -148,11 +152,9 @@ hconstraint = do
 
 hconstraints :: ReadP [Cons]
 hconstraints = do
-  char '{'
-  skipSpaces
+  char '{' <* skipSpaces
   hconstraints_ <- sepBy hconstraint argSeparator
-  skipSpaces
-  char '}'
+  skipSpaces *> char '}'
   return hconstraints_
 
 {- COMBINING TO DEFINE A WQL -}
@@ -162,7 +164,7 @@ wql = do
   skipSpaces
   predication_ <- predExpr
   skipSpaces
-  hconstraints_ <- fmap Just hconstraints <++ return Nothing
+  hconstraints_ <- optionL (Just <$> hconstraints) Nothing
   skipSpaces
   return (WQL predication_ hconstraints_)
 
