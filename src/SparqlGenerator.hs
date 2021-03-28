@@ -10,8 +10,6 @@ import Database.HSparql.QueryGenerator as QG
 import qualified Data.Text as T
 import qualified Data.Map as Map
 import WQL
-import Control.Monad
-import Control.Monad.State
      
 mrs = prefix "mrs" (iriRef "http://www.delph-in.net/schema/mrs#")
 erg = prefix "erg" (iriRef "http://www.delph-in.net/schema/erg#")
@@ -60,10 +58,25 @@ consTransformation (Just (x : xs)) s =
     dict <- varDict s2
     let Just highVar = Map.lookup (high x) dict
         Just lowVar = Map.lookup (low x) dict
-    s3 <- addingTriple (triple v (prefixes s2 !! 4 .:. "type") $ head (prefixes s2) .:. "Qeq") (return s2)
-    s4 <- addingTriple (triple v (head (prefixes s2) .:. "highHcons") highVar) (return s3)
-    s5 <- addingTriple (triple v (head (prefixes s2) .:. "lowHcons") lowVar) (return s4)
-    consTransformation (Just xs) (return s5)
+        s3 = addingTriple
+             (triple
+               v
+               (prefixes s2 !! 4 .:. "type")
+               (head (prefixes s2) .:. "Qeq"))
+             (return s2)
+        s4 = addingTriple
+             (triple
+               v
+               (head (prefixes s2) .:. "highHcons")
+               highVar)
+             s3
+        s5 = addingTriple
+             (triple
+               v
+               (head (prefixes s2) .:. "lowHcons")
+               lowVar)
+             s4
+    consTransformation (Just xs) s5
 consTransformation _ s = s
   
 predExprTransformation :: PredExpr -> Query TransformData -> Query TransformData
@@ -73,7 +86,7 @@ predExprTransformation (And pred1 pred2) s =
   do
     os <- s
     s1 <- predExprTransformation pred1 $ return $ TransformData (varDict os) (mrsVar os) (prefixes os) (return [])
-    s2 <- predExprTransformation pred2 $ return $ TransformData (varDict os) (mrsVar os) (prefixes os) (return [])
+    s2 <- predExprTransformation pred2 $ return $ TransformData (varDict s1) (mrsVar os) (prefixes os) (return [])
     let p0 = patterns os
         p1 = patterns s1
         p2 = patterns s2
@@ -83,7 +96,7 @@ predExprTransformation (Or pred1 pred2) s =
   do
     os <- s
     s1 <- predExprTransformation pred1 $ return $ TransformData (varDict os) (mrsVar os) (prefixes os) (return [])
-    s2 <- predExprTransformation pred2 $ return $ TransformData (varDict os) (mrsVar os) (prefixes os) (return [])
+    s2 <- predExprTransformation pred2 $ return $ TransformData (varDict s1) (mrsVar os) (prefixes os) (return [])
     let p0 = patterns os
         p1 = patterns s1
         p2 = patterns s2
@@ -104,28 +117,25 @@ atomicTransform pred@(Predicate _ (Just epName) _ _ _) s =
     s1 <- createVar epName s
     dict <- varDict s1
     let Just epVar = Map.lookup epName dict
-    s2 <- addingTriple (triple (mrsVar s1) (head (prefixes s1) .:. "hasEP") epVar) (return s1)
-    s3 <- putTop pred epVar (return s2)
-    s4 <- putPred pred epVar (return s3)
-    processArgs (predargs pred) epVar (return s4)
+        s2 = addingTriple (triple (mrsVar s1) (head (prefixes s1) .:. "hasEP") epVar) (return s1)
+        s3 = putTop pred epVar s2
+        s4 = putPred pred epVar s3
+        s5 = processArgs (predargs pred) epVar s4
+    s5
 atomicTransform pred s =
   do
     os <- s
     epVar <- var
-    s1 <- addingTriple (triple (mrsVar os) (head (prefixes os) .:. "hasEP") epVar) s
-    s2 <- putTop pred epVar (return s1)
-    s3 <- putPred pred epVar (return s2)
-    processArgs (predargs pred) epVar (return s3)
-
-_atomicTransform :: Predicate -> QG.Variable -> Query TransformData -> Query TransformData
-_atomicTransform pred epVar s =
-  do
-    os <- s
-    let s1 = addingTriple (triple (mrsVar os) (head (prefixes os) .:. "hasEP") epVar) s
+    let s1 = addingTriple
+             (triple
+               (mrsVar os)
+               (head (prefixes os) .:. "hasEP")
+               epVar)
+             s
         s2 = putTop pred epVar s1
         s3 = putPred pred epVar s2
-        s4 = processArgs (predargs pred) epVar s3 in
-     s4
+        s4 = processArgs (predargs pred) epVar s3
+    s4
   
 -- hardcoding the creating of the hcons, review later
 putTop :: Predicate -> QG.Variable -> Query TransformData -> Query TransformData
@@ -136,13 +146,45 @@ putTop predicate epVar s =
     then
       do
         topH <- var
+        labelVar <- var
         hconsVar <- var
-        let s1 = addingTriple (triple (mrsVar os) (prefixes os!!2 .:. "hasTop") topH) s
-            s2 = addingTriple (triple hconsVar (prefixes os!!3 .:. "type") (head (prefixes os) .:. "Qeq")) s1
-            s3 = addingTriple (triple (mrsVar os) (head(prefixes os) .:. "hasHcons") hconsVar) s2
-            s4 = addingTriple (triple hconsVar (head(prefixes os) .:. "highHcons") topH) s3
-            s5 = addingTriple (triple hconsVar (head(prefixes os) .:. "lowHcons") epVar) s4
-        s5
+        let s1 = addingTriple
+                 (triple
+                   (mrsVar os)
+                   (prefixes os!!2 .:. "hasTop")
+                   topH)
+                 s
+            s2 = addingTriple
+                 (triple
+                   hconsVar
+                   (prefixes os!!3 .:. "type")
+                   (head (prefixes os) .:. "Qeq"))
+                 s1
+            s3 = addingTriple
+                 (triple
+                   (mrsVar os)
+                   (head(prefixes os) .:. "hasHcons")
+                   hconsVar)
+                 s2
+            s4 = addingTriple
+                 (triple
+                   hconsVar
+                   (head(prefixes os) .:. "highHcons")
+                   topH)
+                 s3
+            s5 = addingTriple
+                 (triple
+                   hconsVar
+                   (head(prefixes os) .:. "lowHcons")
+                   labelVar)
+                  s4
+            s6 = addingTriple
+                 (triple
+                   epVar
+                   (head(prefixes os) .:. "hasLabel")
+                   labelVar)
+                  s5
+        s6
     else
       s
 
@@ -151,8 +193,14 @@ putPred (Predicate _ _ modf (Just predText) _) epVar s =
   do
     os <- s
     v <- var
-    s1 <- addingTriple (triple epVar (prefixes os!!2 .:. "hasPredicate") v) s
-    putPredText v predText modf (return s1)
+    let s1 = addingTriple
+             (triple
+               epVar
+               (prefixes os!!2 .:. "hasPredicate")
+               v)
+             s
+        s2 = putPredText v predText modf s1
+    s2
 putPred _ epVar s = s
 
 putPredText :: QG.Variable -> Data.Pattern -> Maybe Char -> Query TransformData -> Query TransformData
@@ -219,55 +267,3 @@ addingTriple t s =
   do
     os <- s
     return $ TransformData (varDict os) (mrsVar os) (prefixes os) ((:) <$> t <*> patterns os)
-
--- Creating the map of WQL variables and SPARQL variables beforehand:
-createVarsWQL :: WQL -> Query VariablesMap
-createVarsWQL (WQL p h) = dict2
-  where
-    dict1 = _createVarsPredExpr p $ return Map.empty
-    dict2 = _createVarsHcons h dict1
-  
-_createVarsPredExpr :: PredExpr -> Query VariablesMap -> Query VariablesMap
-_createVarsPredExpr (P pred) dict = _createVarsPred pred dict
-_createVarsPredExpr (Not pred) dict = _createVarsPredExpr pred dict
-_createVarsPredExpr (And pred1 pred2) dict = dict2
-  where
-    dict1 = _createVarsPredExpr pred1 dict
-    dict2 = _createVarsPredExpr pred2 dict1
-_createVarsPredExpr (Or pred1 pred2) dict = dict2
-  where
-    dict1 = _createVarsPredExpr pred1 dict
-    dict2 = _createVarsPredExpr pred2 dict1
-    
-_createVarsPred :: Predicate -> Query VariablesMap -> Query VariablesMap
-_createVarsPred (Predicate _ predVar _ _ argList) dict = dict2
-  where
-    dict1 =  _createVar predVar dict
-    dict2 =  _createVarsArgs argList dict1
-
-_createVarsArgs :: Maybe [Arg] -> Query VariablesMap -> Query VariablesMap
-_createVarsArgs (Just ((Arg _ varName):xs)) dict = dict2
-  where
-    dict1 = _createVar varName dict
-    dict2 = _createVarsArgs (Just xs) dict1
-_createVarsArgs _ dict = dict
-
-_createVarsHcons :: Maybe [Cons] -> Query VariablesMap -> Query VariablesMap
-_createVarsHcons (Just ((Cons hvar lvar):xs)) dict = dict3
-  where
-    dict1 = _createVar (Just hvar) dict
-    dict2 = _createVar (Just lvar) dict1
-    dict3 = _createVarsHcons (Just xs) dict2    
-_createVarsHcons _ dict = dict
-
-_createVar :: Maybe Data.Variable -> Query VariablesMap -> Query VariablesMap
-_createVar (Just varName) dict =
-  do
-    d <- dict
-    if Map.member varName d
-    then dict
-    else
-      do
-        qv <- var
-        return $ Map.insert varName qv d
-_createVar _ dict = dict
