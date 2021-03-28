@@ -7,30 +7,29 @@ import GHC.Unicode ( isSpace, isAlpha, isDigit, isAlphaNum )
 import Control.Applicative
 import Text.ParserCombinators.ReadP as RP
 import Data
-import Data.Text as T
 
 {- PREDICATION PARSER -}
 
 satisfySpaces :: Char -> ReadP Char
-satisfySpaces c = do
+satisfySpaces c = 
   skipSpaces *> char c <* skipSpaces
 
 skipSpaces1 :: ReadP String
-skipSpaces1 = do
+skipSpaces1 = 
   munch1 isSpace
 
 variable :: ReadP Variable
 variable = do
   code <- satisfy isAlpha
   body <- munch isAlphaNum 
-  return (code : body)
+  return $ code : body
 
 predVar :: ReadP Variable
-predVar = do
+predVar = 
   variable <* char ':'
 
 rolePat :: ReadP Pattern
-rolePat = do
+rolePat = 
   munch1 $ \c -> isAlphaNum c || c == '*'
 
 argument :: ReadP Arg
@@ -58,18 +57,18 @@ pos = do
   charPos <- satisfy $ \c -> c `elem` "nvajrscpqxud"
   return [underlinePos, charPos]
 sense = do
-  underlineSense <- option "" $ string "_"
+  underlineSense <- char '_'
   sense <- munch1 $ \c -> notElem c "?[]{}|!&_()^" && not (isSpace c)
-  return (underlineSense ++ sense)
+  return $ underlineSense : sense
 
 predPat :: ReadP String
 predPat = do
-  under_ <- option "" $ string "_"
+  under_ <- string "_" <++ return ""
   lemma_ <- lemma
-  pos_ <- option "" pos
-  sense_ <- option "" sense
-  rel_ <- option "" $ string "_rel"
-  return (under_ ++ lemma_ ++ pos_ ++ sense_ ++ rel_)
+  pos_ <- pos <++ return ""
+  sense_ <- sense <++ return ""
+  rel_ <- string "_rel" <++ return ""
+  return (under_ ++ lemma_ ++ pos_ ++ sense_)
 
 predTop :: ReadP Bool
 predTop = do
@@ -90,6 +89,7 @@ predication1 = do
 
 predication2 :: ReadP PredExpr
 predication2 = do
+  predTop_ <- predTop <++ return False
   predVar_ <- fmap Just predVar <++ return Nothing
   arglist_ <- fmap Just arglist
   return $ P $ Predicate False predVar_ Nothing Nothing arglist_
@@ -168,15 +168,9 @@ wql = do
 
 {- OPTIMIZATIONS -}
 _pushNots :: PredExpr -> PredExpr
--- NOTE: simple operators
---_pushNots (Not predx) = Not (_pushNots predx)
---_pushNots (Or predl predr) = Or (_pushNots predl) (_pushNots predr)
---_pushNots (And predl predr) = And (_pushNots predl) (_pushNots predr)
--- NOTE: not-composite operators
 _pushNots (Not (Not p)) = _pushNots p
 _pushNots (Not (Or predl predr)) = And (_pushNots (Not predl)) (_pushNots (Not predr))
 _pushNots (Not (And predl predr)) = Or (_pushNots (Not predl)) (_pushNots (Not predr))
--- NOTE: every other case
 _pushNots predx = predx
   
 pushNots :: WQL -> WQL

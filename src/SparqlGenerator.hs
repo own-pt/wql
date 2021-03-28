@@ -3,13 +3,12 @@
 module SparqlGenerator where
 
 import GHC.Unicode ( isSpace, isAlpha, isDigit, isAlphaNum )
-import Control.Applicative
 import Text.ParserCombinators.ReadP as RP
 import Data 
 import Database.HSparql.QueryGenerator as QG
 import qualified Data.Text as T
 import qualified Data.Map as Map
-import WQL
+import WQL (wql, pushNots)
      
 mrs = prefix "mrs" (iriRef "http://www.delph-in.net/schema/mrs#")
 --erg = prefix "erg" (iriRef "http://www.delph-in.net/schema/erg#")
@@ -90,8 +89,7 @@ predExprTransformation (And pred1 pred2) s =
     let p0 = patterns os
         p1 = patterns s1
         p2 = patterns s2
-    return $ TransformData (varDict s2) (mrsVar os) (prefixes os) ((++) <$> p0 <*> p1 *> p2)
-    
+    return $ TransformData (varDict s2) (mrsVar os) (prefixes os) ((++) <$> p0 <*> p1 *> p2)    
 predExprTransformation (Or pred1 pred2) s =
   do
     os <- s
@@ -101,7 +99,6 @@ predExprTransformation (Or pred1 pred2) s =
         p1 = patterns s1
         p2 = patterns s2
     return $ TransformData (varDict s2) (mrsVar os) (prefixes os) ((:) <$> union p1 p2 <*> p0)
-    
 predExprTransformation (Not pred) s =
   do
     os <- s
@@ -109,7 +106,6 @@ predExprTransformation (Not pred) s =
     let p0 = patterns os
         p1 = patterns s1
     return $ TransformData (varDict s1) (mrsVar os) (prefixes os) ((:) <$> filterNotExists p1 <*> p0)
-
 
 atomicTransform :: Predicate -> Query TransformData -> Query TransformData
 atomicTransform pred@(Predicate _ (Just epName) _ _ _) s =
@@ -237,14 +233,19 @@ putPredText predicateVar predText modf s =
                 Just '=' -> addingTriple
                             (triple
                               predicateVar
-                              (prefixes os!!2 .:. "hasSense")
+                              (prefixes os!!1 .:. "hasSense")
                               v)
                             s
         addingTriple
           (filterExpr $ regex v newPredText)
           (return s1)
       else
-      addingTriple (triple predicateVar (prefixes os!!2 .:. "predText") (T.pack predText)) s
+      addingTriple
+      (triple
+        predicateVar
+        (prefixes os!!1 .:. "predText")
+        (T.pack predText))
+      s
 
 processArgs :: Maybe [Arg] -> QG.Variable -> Query TransformData -> Query TransformData
 processArgs (Just ((Arg role (Just holeName)):xs)) epVar s =
