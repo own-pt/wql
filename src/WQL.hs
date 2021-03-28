@@ -12,8 +12,8 @@ import Data
 
 -- Recreating optional for maximal "munch"
 optionL :: ReadP a -> a -> ReadP a
--- ^ @optionL p x@ will parse @p@ and will return @x@ without consuming
---   any input if it fails
+-- ^ @optionL p x@ will parse @p@ and, if it fails, it will return @x@ without consuming
+--   any input 
 optionL p x = p <++ return x
 
 satisfySpaces :: Char -> ReadP Char
@@ -49,11 +49,9 @@ argSeparator = satisfySpaces ','
 
 arglist :: ReadP [Arg]
 arglist = do
-  char '['
-  skipSpaces
+  char '[' <* skipSpaces
   arglist_ <- sepBy argument argSeparator
-  skipSpaces
-  char ']'
+  skipSpaces *> char ']'
   return arglist_
 
 lemma = do
