@@ -43,7 +43,7 @@ wqlTransformation w@(WQL p h) =
       s = predExprTransformation
           p
           (return $ TransformData
-            (createVarsWQL w)
+            (return Map.empty)
             mrsVar
             prefixes
             ((: []) <$> triple mrsVar (rdf .:. "type") (mrs .:. "MRS")))
@@ -55,14 +55,16 @@ consTransformation :: Maybe [Cons] -> Query TransformData -> Query TransformData
 consTransformation (Just (x : xs)) s =
   do
     v <- var
-    os <- s
-    dict <- varDict os
+    s1 <- createVar (high x) s
+    s2 <- createVar (low x) (return s1)
+    dict <- varDict s2
     let Just highVar = Map.lookup (high x) dict
         Just lowVar = Map.lookup (low x) dict
-    s3 <- addingTriple (triple v (prefixes s1 !! 4 .:. "type") $ head (prefixes s1) .:. "Qeq") (return s2)
-    s4 <- addingTriple (triple v (head (prefixes s1) .:. "highHcons") highVar) (return s3)
-    s5 <- addingTriple (triple v (head (prefixes s1) .:. "lowHcons") lowVar) (return s4)
-    consTransformation xs (return s5)
+    s3 <- addingTriple (triple v (prefixes s2 !! 4 .:. "type") $ head (prefixes s2) .:. "Qeq") (return s2)
+    s4 <- addingTriple (triple v (head (prefixes s2) .:. "highHcons") highVar) (return s3)
+    s5 <- addingTriple (triple v (head (prefixes s2) .:. "lowHcons") lowVar) (return s4)
+    consTransformation (Just xs) (return s5)
+consTransformation _ s = s
   
 predExprTransformation :: PredExpr -> Query TransformData -> Query TransformData
 predExprTransformation (P pred) s =
@@ -99,13 +101,21 @@ predExprTransformation (Not pred) s =
 atomicTransform :: Predicate -> Query TransformData -> Query TransformData
 atomicTransform pred@(Predicate _ (Just epName) _ _ _) s =
   do
-    dict <- s >>= varDict 
+    s1 <- createVar epName s
+    dict <- varDict s1
     let Just epVar = Map.lookup epName dict
-    _atomicTransform pred epVar s
+    s2 <- addingTriple (triple (mrsVar s1) (head (prefixes s1) .:. "hasEP") epVar) (return s1)
+    s3 <- putTop pred epVar (return s2)
+    s4 <- putPred pred epVar (return s3)
+    processArgs (predargs pred) epVar (return s4)
 atomicTransform pred s =
   do
+    os <- s
     epVar <- var
-    _atomicTransform pred epVar s
+    s1 <- addingTriple (triple (mrsVar os) (head (prefixes os) .:. "hasEP") epVar) s
+    s2 <- putTop pred epVar (return s1)
+    s3 <- putPred pred epVar (return s2)
+    processArgs (predargs pred) epVar (return s3)
 
 _atomicTransform :: Predicate -> QG.Variable -> Query TransformData -> Query TransformData
 _atomicTransform pred epVar s =
@@ -141,9 +151,8 @@ putPred (Predicate _ _ modf (Just predText) _) epVar s =
   do
     os <- s
     v <- var
-    let s1 = addingTriple (triple epVar (prefixes os!!2 .:. "hasPredicate") v) s
-        s2 = putPredText v predText modf s1
-    s2
+    s1 <- addingTriple (triple epVar (prefixes os!!2 .:. "hasPredicate") v) s
+    putPredText v predText modf (return s1)
 putPred _ epVar s = s
 
 putPredText :: QG.Variable -> Data.Pattern -> Maybe Char -> Query TransformData -> Query TransformData
@@ -155,13 +164,12 @@ putPredText predicateVar predText modf s =
       do
         v <- var
         let newPredText = T.replace "*" ".*" $ T.pack predText
-            s1 = case modf of
-                   Nothing -> addingTriple (triple predicateVar (prefixes os!!2 .:. "predText") v) s
-                   Just '+' -> addingTriple (triple predicateVar (prefixes os!!2 .:. "hasLemma") v) s
-                   Just '/' -> addingTriple (triple predicateVar (prefixes os!!2 .:. "hasPos") v) s
-                   Just '=' -> addingTriple (triple predicateVar (prefixes os!!2 .:. "hasSense") v) s
-            s2 = addingTriple (filterExpr $ regex v  newPredText) s1
-        s2
+        s1 <- case modf of
+                Nothing -> addingTriple (triple predicateVar (prefixes os!!2 .:. "predText") v) s
+                Just '+' -> addingTriple (triple predicateVar (prefixes os!!2 .:. "hasLemma") v) s
+                Just '/' -> addingTriple (triple predicateVar (prefixes os!!2 .:. "hasPos") v) s
+                Just '=' -> addingTriple (triple predicateVar (prefixes os!!2 .:. "hasSense") v) s
+        addingTriple (filterExpr $ regex v  newPredText) (return s1)
       else
       addingTriple (triple predicateVar (prefixes os!!2 .:. "predText") (T.pack predText)) s
 
@@ -173,8 +181,8 @@ processArgs (Just ((Arg role (Just holeName)):xs)) epVar s =
     let Just v = Map.lookup holeName dict
     case role of
       "*" -> addingTriple
-             (triple epVar (head (prefixes s1) .:. T.pack "role") v)
-             (return s1)
+             (triple epVar (head (prefixes os) .:. T.pack "role") v)
+             (return os)
       _ -> if '*' `elem` role
            then
              do
@@ -188,8 +196,10 @@ processArgs (Just ((Arg role (Just holeName)):xs)) epVar s =
                  (return s1)
            else
              addingTriple
-             (triple epVar (head (prefixes s1) .:. (T.toLower . T.pack) role) v)
-             (return s1)
+             (triple epVar (head (prefixes os) .:. (T.toLower . T.pack) role) v)
+             (return os)
+processArgs _ _ s = s
+
         
 --This function don't create a new variable for one that already exists 
 createVar :: Data.Variable -> Query TransformData -> Query TransformData
@@ -197,23 +207,13 @@ createVar varName s =
   do
     os <- s
     dict <- varDict os
-    v <- var
-    let s1 = case role of
-               "*" -> addingTriple (triple epVar (head (prefixes os) .:. T.pack "role") v) s
-               _ -> if '*' `elem` role
-                    then
-                      do
-                        roleV <- var
-                        let newRoleText = T.replace "*" ".*" $ (T.toLower . T.pack) role
-                            s11 = addingTriple (triple epVar roleV v) s
-                            s12 = addingTriple (filterExpr $ regex roleV newRoleText) s11
-                        s12
-                    else
-                      addingTriple (triple epVar (head (prefixes os) .:. (T.toLower . T.pack) role) v) s
-        s2 = processArgs (Just xs) epVar s1
-    s2
-processArgs _ _ s = s
-        
+    if Map.member varName dict
+      then s
+      else
+      do
+        v <- var
+        return $ TransformData (return $ Map.insert varName v dict) (mrsVar os) (prefixes os) (patterns os)
+
 addingTriple :: Query QG.Pattern -> Query TransformData -> Query TransformData
 addingTriple t s =
   do
