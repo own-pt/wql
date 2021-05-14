@@ -28,8 +28,8 @@ data PredExpr
   | P Predicate  deriving Show
 
 data Cons = Cons
-  { low  :: Variable
-  , high :: Variable
+  { high :: Variable
+  , low  :: Variable
 --  , op   :: Pattern
   } deriving Show
 

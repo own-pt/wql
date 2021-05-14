@@ -1,6 +1,8 @@
 module Main where
 
-import Lib
+import SparqlGenerator
 
-main :: IO ()
-main = someFunc
+--main :: IO String
+main = do
+  s <- getLine
+  putStrLn $ generateSPARQL s
