@@ -250,7 +250,7 @@ putPredText predicateVar predText modf s =
 processArgs :: Maybe [Arg] -> QG.Variable -> Query TransformData -> Query TransformData
 processArgs (Just ((Arg role (Just holeName)):xs)) epVar s =
   do
-    os <- s
+    os <- createVar holeName s
     dict <- varDict os
     let Just v = Map.lookup holeName dict
     case role of
