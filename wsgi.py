@@ -42,8 +42,17 @@ class ProvCSS:
         with open('style.css', 'r') as f: 
             resp.media = f.read()
             
+class MRSJS:
+    def on_get(self, req, resp):
+        # resp.content_type = "text/javascript"
+        with open('mrs.js', 'r') as f: 
+            resp.media = f.read()
+# class 
+
 app = falcon.API()
 app.add_static_route('/foo', '/home/gambitura/workspace/venv-delphin/wql/style.css')
+app.add_route('/mrsjs', MRSJS())
+# app.add_static_route('/mrsjs', '/home/gambitura/workspace/venv-delphin/wql/mrs.js')
 app.add_route('/list', Profile())
 app.add_route('/', Defaul())
 app.add_route('/test', Testest())

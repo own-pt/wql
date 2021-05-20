@@ -8,6 +8,8 @@
         <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.3/lodash.min.js"></script>
         <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/svg.js/2.3.6/svg.min.js"></script>
         <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <script type="text/javascript" src="http://127.0.0.1:8000/mrsjs" charset="utf-8"></script>
+
     </head>
 
     <style> 
@@ -53,6 +55,43 @@
             });
         });
     </script> -->
+
+    
+    <script type="text/javascript">
+        var divSents = document.getElementById('sents-cont');
+        // Object with the sentences:
+        var sentObj = $.getJSON('./list', (data, sucess) => {
+            $.each(data, (key, val) => {
+                let sentText = document.createElement('button');
+                sentText.className = 'collapsible';
+                sentText.innerHTML = `<strong>${key}.</strong> ${val}`;
+                divSents.appendChild(sentText);
+
+                let hiddenContent = document.createElement('div');
+                hiddenContent.className = 'content';
+                // hiddenContent.innerHTML = 'teste';
+                divSents.appendChild(hiddenContent);
+
+                sentText.addEventListener("click", () => {
+                    sentText.classList.toggle("active");
+                    var content = sentText.nextElementSibling; // conteudo
+                    if (content.style.display === "block") {
+                        content.style.display = "none";
+                        hiddenContent.innerHTML = '';
+                    } else {
+                        content.style.display = "block";
+                        $.get(`http://127.0.0.1:8000/test?id=${key}`, (data2) => {
+                            // hiddenContent.innerHTML = data2;
+                            MRS(hiddenContent, JSON.parse(data2));
+                            console.log(data2);
+                            // MRS(hiddenContent, data2);
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+
     <script type="text/javascript">
         function MRS(parentElement, mrsData){
             // Constant pixel sizes used
@@ -431,39 +470,6 @@
             addHandlers(self.element);
             return self;
         }
-    </script>
-    <script type="text/javascript">
-        var divSents = document.getElementById('sents-cont');
-        // Object with the sentences:
-        var sentObj = $.getJSON('./list', (data, sucess) => {
-            $.each(data, (key, val) => {
-                let sentText = document.createElement('button');
-                sentText.className = 'collapsible';
-                sentText.innerHTML = `<strong>${key}.</strong> ${val}`;
-                divSents.appendChild(sentText);
-
-                let hiddenContent = document.createElement('div');
-                hiddenContent.className = 'content';
-                // hiddenContent.innerHTML = 'teste';
-                divSents.appendChild(hiddenContent);
-
-                sentText.addEventListener("click", () => {
-                    sentText.classList.toggle("active");
-                    var content = sentText.nextElementSibling; // conteudo
-                    if (content.style.display === "block") {
-                        content.style.display = "none";
-                        hiddenContent.innerHTML = '';
-                    } else {
-                        content.style.display = "block";
-                        $.get(`http://127.0.0.1:8000/test?id=${key}`, (data2) => {
-                            hiddenContent.innerHTML = data2;
-                            console.log(data2);
-                            // MRS(hiddenContent, data2);
-                        });
-                    }
-                });
-            });
-        });
     </script>
 
 </html>
