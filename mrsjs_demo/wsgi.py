@@ -1,10 +1,12 @@
 
 import falcon
 from delphin import ace
-from delphin.codecs.mrsjson import encode
+from delphin.codecs.mrsjson import encode as mrsjsonEncode
+from delphin.codecs.dmrsjson import encode as dmrsjsonEncode
 from delphin import itsdb
 from delphin import tsql
 from delphin.codecs.simplemrs import loads
+from delphin.dmrs import from_mrs
 import json
 
 grm = '/home/gambitura/workspace/erg-2018-x86-64-0.9.31.dat'
@@ -23,19 +25,32 @@ class Profile:
 # class Mrs:
 #     def on_get(self, req, res
         
-class Defaul:
+class MRSsite:
     def on_get(self, req, resp):
         resp.content_type = falcon.MEDIA_HTML
-        with open('hw.html', 'rb') as f: 
+        with open('mrs-viz.html', 'rb') as f: 
             resp.data = f.read()
 
-class Testest:
+class DMRSsite:
+    def on_get(self, req, resp):
+        resp.content_type = falcon.MEDIA_HTML
+        with open('dmrs-viz.html', 'rb') as f: 
+            resp.data = f.read()
+
+class Qmrs:
     def on_get(self, req, resp):
         reqId = req.get_param('id', True)
         # resp.media = mrsStrings[int(id)]
         mrsObj = loads(mrsStrings[int(reqId)])
-        resp.media = encode(mrsObj[0]) #only first MRS
+        resp.media = mrsjsonEncode(mrsObj[0]) #only first MRS
         
+class Qdmrs:
+    def on_get(self, req, resp):
+        reqId = req.get_param('id', True)
+        # resp.media = mrsStrings[int(id)]
+        mrsObj = loads(mrsStrings[int(reqId)])[0]
+        resp.media = dmrsjsonEncode(from_mrs(mrsObj)) #only first MRS
+
 class ProvCSS:
     def on_get(self, req, resp):
         resp.content_type = falcon.MEDIA_TEXT
@@ -54,8 +69,10 @@ app.add_static_route('/foo', '/home/gambitura/workspace/venv-delphin/wql/style.c
 app.add_route('/mrsjs', MRSJS())
 # app.add_static_route('/mrsjs', '/home/gambitura/workspace/venv-delphin/wql/mrs.js')
 app.add_route('/list', Profile())
-app.add_route('/', Defaul())
-app.add_route('/test', Testest())
+app.add_route('/mrs-viz', MRSsite())
+app.add_route('/dmrs-viz', DMRSsite())
+app.add_route('/qmrs', Qmrs())
+app.add_route('/qdmrs', Qdmrs())
 app.add_route('/style.css', ProvCSS())
 
 
