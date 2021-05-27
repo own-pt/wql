@@ -7,10 +7,14 @@ from delphin import itsdb
 from delphin import tsql
 from delphin.codecs.simplemrs import loads
 from delphin.dmrs import from_mrs
-import json
 
-grm = '/home/gambitura/workspace/erg-2018-x86-64-0.9.31.dat'
-ts = itsdb.TestSuite('/home/gambitura/workspace/erg/trunk/tsdb/gold/mrs')
+import mimetypes
+import io
+import json
+import os
+
+grm = '/Users/ar/hpsg/simpleDBpediaQA/erg.dat'
+ts = itsdb.TestSuite('/Users/ar/hpsg/simpleDBpediaQA/test.p')
 mrsStrings = {i['parse-id']: i['mrs'] for i in ts['result']}
 
 class Profile:
@@ -62,19 +66,31 @@ class MRSJS:
         # resp.content_type = "text/javascript"
         with open('mrs.js', 'r') as f: 
             resp.media = f.read()
-# class 
 
+
+class Item:
+    def __init__(self, path):
+        self._root = path
+
+    def on_get(self, req, resp, name):
+        apath = os.path.join(self._root, name)
+        resp.content_type = mimetypes.guess_type(name)[0]
+        resp.stream = io.open(apath, 'rb')
+        resp.content_length = os.path.getsize(apath)
+        
 app = falcon.API()
-app.add_static_route('/foo', '/home/gambitura/workspace/venv-delphin/wql/style.css')
-app.add_route('/mrsjs', MRSJS())
+
+# app.add_static_route('/foo', '/Users/ar/hpsg/wql/mrsjs_demo/wql/style.css')
 # app.add_static_route('/mrsjs', '/home/gambitura/workspace/venv-delphin/wql/mrs.js')
+# app.add_route('/mrsjs', MRSJS())
+# app.add_route('/style.css', ProvCSS())
+# app.add_route('/mrs', My.mrs)
+
+app.add_route('/resources/{name}', Item('/Users/ar/hpsg/wql/mrsjs_demo/resources/'))
 app.add_route('/list', Profile())
 app.add_route('/mrs-viz', MRSsite())
 app.add_route('/dmrs-viz', DMRSsite())
 app.add_route('/qmrs', Qmrs())
 app.add_route('/qdmrs', Qdmrs())
-app.add_route('/style.css', ProvCSS())
 
-
-# app.add_route('/mrs', My.mrs)
 # command gunicorn wsgi:app
