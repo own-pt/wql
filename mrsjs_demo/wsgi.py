@@ -55,19 +55,6 @@ class Qdmrs:
         mrsObj = loads(mrsStrings[int(reqId)])[0]
         resp.media = dmrsjsonEncode(from_mrs(mrsObj)) #only first MRS
 
-class ProvCSS:
-    def on_get(self, req, resp):
-        resp.content_type = falcon.MEDIA_TEXT
-        with open('style.css', 'r') as f: 
-            resp.media = f.read()
-            
-class MRSJS:
-    def on_get(self, req, resp):
-        # resp.content_type = "text/javascript"
-        with open('mrs.js', 'r') as f: 
-            resp.media = f.read()
-
-
 class Item:
     def __init__(self, path):
         self._root = path
