@@ -73,7 +73,7 @@ app = falcon.API()
 # app.add_route('/style.css', ProvCSS())
 # app.add_route('/mrs', My.mrs)
 
-app.add_route('/resources/{name}', Item('/Users/ar/hpsg/wql/mrsjs_demo/resources/'))
+app.add_route('/resources/{name}', Item('/Users/ar/hpsg/wql/webapp/resources/'))
 app.add_route('/list', Profile())
 app.add_route('/mrs-viz', MRSsite())
 app.add_route('/dmrs-viz', DMRSsite())
