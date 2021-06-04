@@ -55,19 +55,6 @@ class Qdmrs:
         mrsObj = loads(mrsStrings[int(reqId)])[0]
         resp.media = dmrsjsonEncode(from_mrs(mrsObj)) #only first MRS
 
-class ProvCSS:
-    def on_get(self, req, resp):
-        resp.content_type = falcon.MEDIA_TEXT
-        with open('style.css', 'r') as f: 
-            resp.media = f.read()
-            
-class MRSJS:
-    def on_get(self, req, resp):
-        # resp.content_type = "text/javascript"
-        with open('mrs.js', 'r') as f: 
-            resp.media = f.read()
-
-
 class Item:
     def __init__(self, path):
         self._root = path
@@ -86,7 +73,7 @@ app = falcon.API()
 # app.add_route('/style.css', ProvCSS())
 # app.add_route('/mrs', My.mrs)
 
-app.add_route('/resources/{name}', Item('/Users/ar/hpsg/wql/mrsjs_demo/resources/'))
+app.add_route('/resources/{name}', Item('/Users/ar/hpsg/wql/webapp/resources/'))
 app.add_route('/list', Profile())
 app.add_route('/mrs-viz', MRSsite())
 app.add_route('/dmrs-viz', DMRSsite())
