@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+    <head>
+      <title>MRS viz</title>
+      <link rel="stylesheet" type="text/css" media="screen" href="http://127.0.0.1:5000/css/style.css">       
+      <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+      <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+      
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.3/lodash.min.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/svg.js/2.3.6/svg.min.js"></script>
+      <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+      <script type="text/javascript" src="http://127.0.0.1:5000/js/mrs.js" charset="utf-8"></script>
+    </head>
+
+    <body style="text-align: center;"> 
+      <p>A webpage for visualizing MRSs from profiles using <a href="https://github.com/delph-in/delphin-viz">mrs.js</a></p>
+    </body>
+
+    <div id="sents-cont">
+      {% for (key, val) in sents %}
+        <button class="collapsible">
+          <strong>
+            {{key}}.
+          </strong>
+            {{val}}
+        </button>
+        <div class="content"></div>
+      {% endfor %}
+    </div>
+    <script type="text/javascript">
+      var buttons = document.getElementById("sents-cont")
+                      .querySelectorAll("button");
+      buttons.forEach((button) => {
+        // getting id in profile:
+        var key = button.querySelector("strong")
+                        .innerText.match("\\d+")[0];
+
+        button.addEventListener("click", () => {
+          button.classList.toggle("active");
+          var content = button.nextElementSibling;
+          if (content.style.display === "block") {
+            content.style.display = "none";
+            content.innerHTML = '';
+          } else {
+            content.style.display = "block";
+            $.get(`http://127.0.0.1:5000/qmrs?id=${key}`, (data2) => {
+              MRS(content, JSON.parse(data2));
+            });
+          } 
+        });
+      });
+    </script>
+</html>

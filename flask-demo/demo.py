@@ -1,4 +1,4 @@
-from flask import Flask, request, send_from_directory
+from flask import Flask, request, send_from_directory, render_template
 from delphin import ace
 from delphin.codecs.mrsjson import encode as mrsjsonEncode
 from delphin.codecs.dmrsjson import encode as dmrsjsonEncode
@@ -6,11 +6,6 @@ from delphin import itsdb
 from delphin import tsql
 from delphin.codecs.simplemrs import loads
 from delphin.dmrs import from_mrs
-
-# import mimetypes
-# import io
-# import json
-# import os
 
 # grm = '/Users/ar/hpsg/simpleDBpediaQA/erg.dat'
 # ts = itsdb.TestSuite('/Users/ar/hpsg/simpleDBpediaQA/test.p')
@@ -52,6 +47,14 @@ def queryIdDMRS():
     mrsObj = loads(mrsStrings[int(reqId)])[0]
     return dmrsjsonEncode(from_mrs(mrsObj))
 
+sents = {r['i-id']: r['i-input'] for r in ts['item']}
+@app.route('/mrs-list')
+def showMRSpage():
+    return render_template("mrs-list.html.jinja", sents = list(sents.items()))
+
+@app.route('/dmrs-list')
+def showDMRSpage():
+    return render_template("dmrs-list.html.jinja", sents = list(sents.items()))
 
 if __name__ == "__main__":
     app.run()
