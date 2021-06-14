@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>WQL search demo</title>
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+        <link rel="stylesheet" type="text/css" media="screen" href="{{ url_for('static', filename='../css/styleq.css') }}">       
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.3/lodash.min.js"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/svg.js/2.3.6/svg.min.js"></script>
+        <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        {# <script type="text/javascript" src="http://127.0.0.1:5000/js/dmrs.js" charset="utf-8"></script> #}
+    </head>
+    <body> 
+        <p id="into-text" style="text-align: center;">This demo is a test for the reworked WeSearch Query Language (WQL) which is documented <a href="https://github.com/own-pt/wql">here</a> and depends on <a href="https://github.com/own-pt/delphin-rdf">this</a> RDF generation.</p>
+        <div class="centered">
+            <form method="get">
+                <strong>WQL query</strong><br>
+                <textarea id="query" name="query" rows="5" cols="100">{{wql_query}}</textarea><br>
+                <input type="submit" value="Submit" style="margin-top: 4px;">
+            </form>
+        </div><br>
+        {% block results %}{% endblock %}   
+    </body>
+   

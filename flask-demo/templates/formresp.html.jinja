@@ -1,0 +1,51 @@
+{% extends 'form.html.jinja' %}
+
+{% block results %}
+    <script type="text/javascript" src="{{ url_for('static', filename='../js/mrs.js') }}" charset="utf-8"></script>      
+    <link rel="stylesheet" type="text/css" media="screen" href="{{ url_for('static', filename='../css/style.css') }}">     <div id="result"><br>
+    <button id="sparql">Hide SPARQL</button>
+    <div id="sparql-div" style="display: block;">
+        {{ sparql }}
+    </div><br><br>
+    {# <div id="mrs-results">
+        {{query_result}}
+    </div> #}
+    <strong>Showing page 1</strong> 
+    <div id="mrsViz-results"></div>
+    </div>
+    <script type="text/javascript">
+        var button = document.getElementById('sparql');
+        var sparqlDiv = button.nextElementSibling;
+        button.addEventListener("click", () => {
+            if (sparqlDiv.style.display === "block") {
+                sparqlDiv.style.display = "none";
+                button.innerHTML = "Show SPARQL";
+            } else {
+                sparqlDiv.style.display = "block";
+                button.innerHTML = "Hide SPARQL";
+            }
+        });
+        var sparqlQuery = sparqlDiv.nextElementSibling.innerText;
+        var queryBase = "SELECT ?s ?p ?o where {?s ?p ?o}"
+        var mrsJsons = {{mrs_jsons}};
+        var sentsMatched = {{sentsM}}
+        mrsJsons = mrsJsons.map(JSON.parse);
+        var vizCont = document.getElementById("mrsViz-results");
+        for (var i = 0; i < mrsJsons.length; i++) {
+            var divViz = document.createElement('div');
+            divViz.className = "mrsViz";
+            divViz.innerHTML = `<hr><strong>${sentsMatched[i][0]}.</strong> ${sentsMatched[i][1]}`;
+            vizCont.appendChild(divViz);
+            MRS(divViz, mrsJsons[i]);
+        }
+        {# mrsJsons.forEach((mrsJson) => {
+            var divViz = document.createElement('div');
+            divViz.className = "mrsViz";
+            divViz.innerHTML = 
+            vizCont.appendChild(divViz);
+            MRS(divViz, mrsJson);
+            // vizCont.appendChild(document.createElement('br'));
+        }); #}
+    </script>
+{% endblock %}}
+
