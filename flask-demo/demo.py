@@ -8,6 +8,7 @@ from delphin import itsdb
 from delphin import tsql
 from delphin.codecs.simplemrs import loads
 from delphin.dmrs import from_mrs
+from math import ceil
 import requests
 import re
 
@@ -69,9 +70,11 @@ def getName():
     #     nome2 = request.form['lname']
     #     session['name'] = nome1 + ' ' + nome2
     #     return redirect(url_for('index'))
-    if 'query' in request.args:
+    if ('query' in request.args) and ('p' in request.args):
+        sents_per_page = 20 # TODO: make it a user choice.
         # TODO: Handle request errors:
         wql_q = request.args['query'].strip(' ')
+        page = int(request.args['p'].strip(' '))
         x = requests.post("http://turastation:8080/query", json = {'q': wql_q})
         sparql_result = requests.get("http://turastation:10035/repositories/gold-erg", 
                                      params={'query': x.text}, 
@@ -81,12 +84,18 @@ def getName():
         mrsJsons = [mrsjsonEncode(loads(mrsStrings[int(id)])[0]) for id in mrsIdsMatched]
         sentsMatched = [[int(id), textsById[int(id)]] for id in mrsIdsMatched]
         
+        # Grouping sentences here:
+        n_pages = ceil(len(mrsJsons))
+        mrsJsons = [mrsJsons[(20*i):(20*i + 20)] for i in range(n_pages)]
+        sentsMatched = [sentsMatched[(20*i):(20*i + 20)] for i in range(n_pages)]
+        if page > n_pages: #handle this case in a better way.
+            page = n_pages
         return render_template("formresp.html.jinja", 
                                 sparql = x.text.replace('<','&lt;').replace('>','&gt;'),
                                 query_result = sparql_result.text.replace('<','&lt;').replace('>','&gt;'),
                                 wql_query = wql_q, 
-                                mrs_jsons = mrsJsons,
-                                sentsM = sentsMatched)
+                                mrs_jsons = mrsJsons[page - 1],
+                                sentsM = sentsMatched[page - 1])
     else:
         return render_template("form.html.jinja", wql_query = "[* x]")
 
