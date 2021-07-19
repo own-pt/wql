@@ -2,17 +2,26 @@
 
 {% block results %}
     <script type="text/javascript" src="{{ url_for('static', filename='../js/mrs.js') }}" charset="utf-8"></script>      
-    <link rel="stylesheet" type="text/css" media="screen" href="{{ url_for('static', filename='../css/style.css') }}">     <div id="result"><br>
-    <button id="sparql">Hide SPARQL</button>
-    <div id="sparql-div" style="display: block;">
-        {{ sparql }}
-    </div><br><br>
-    {# <div id="mrs-results">
-        {{query_result}}
-    </div> #}
-    <strong>Showing page 1</strong> 
-    <div id="mrsViz-results"></div>
+    <link rel="stylesheet" type="text/css" media="screen" href="{{ url_for('static', filename='../css/style.css') }}">    
+    <div id="result"><br>
+        <button id="sparql">Hide SPARQL</button>
+        <div id="sparql-div" style="display: block;">
+            {{ sparql }}
+        </div><br><br>
+        {# <div id="mrs-results">
+            {{query_result}}
+        </div> #}
+        <strong style="text-align: center">{{quantMatches[0]}} in {{quantMatches[1]}} sentences</strong><br>
+        <strong>Showing page {{page}}</strong>
+        <div>
+            <a href="../test-form?query={{wql_query}}&p={{page-1}}" class="next">&laquo;</a> 
+            <a href="../test-form?query={{wql_query}}&p={{page+1}}" class="next">&raquo;</a> 
+        </div>
+        <div id="mrsViz-results"></div>
+        <a href="../test-form?query={{wql_query}}&p={{page-1}}" class="next">&laquo;</a> 
+        <a href="../test-form?query={{wql_query}}&p={{page+1}}" class="next">&raquo;</a>    
     </div>
+
     <script type="text/javascript">
         var button = document.getElementById('sparql');
         var sparqlDiv = button.nextElementSibling;
@@ -27,17 +36,25 @@
         });
         var sparqlQuery = sparqlDiv.nextElementSibling.innerText;
         var queryBase = "SELECT ?s ?p ?o where {?s ?p ?o}"
-        var mrsJsons = {{mrs_jsons}};
-        var sentsMatched = {{sentsM}}
-        mrsJsons = mrsJsons.map(JSON.parse);
+        var matchesPage = {{matchesPage}};
+        var vizCont = document.getElementById("mrsViz-results");
+        for (var key in matchesPage) {
+            var divViz = document.createElement('div');
+            divViz.className = "mrsViz";
+            divViz.innerHTML = `<hr><strong>${key}.</strong> ${matchesPage[key]['text']} <br>`;
+            vizCont.appendChild(divViz);
+            MRS(divViz, JSON.parse(matchesPage[key]['mrs']));
+        }
+
+        {# mrsJsons = mrsJsons.map(JSON.parse);
         var vizCont = document.getElementById("mrsViz-results");
         for (var i = 0; i < mrsJsons.length; i++) {
             var divViz = document.createElement('div');
             divViz.className = "mrsViz";
-            divViz.innerHTML = `<hr><strong>${sentsMatched[i][0]}.</strong> ${sentsMatched[i][1]}`;
+            divViz.innerHTML = `<hr><strong>${sentsMatched[i][0]}.</strong> ${sentsMatched[i][1]} <br>`;
             vizCont.appendChild(divViz);
             MRS(divViz, mrsJsons[i]);
-        }
+        } #}
     </script>
 {% endblock %}}
 

@@ -15,8 +15,9 @@ import re
 # grm = '/Users/ar/hpsg/simpleDBpediaQA/erg.dat'
 # ts = itsdb.TestSuite('/Users/ar/hpsg/simpleDBpediaQA/test.p')
 ts = itsdb.TestSuite('/home/gambitura/workspace/erg/trunk/tsdb/gold/mrs')
-mrsStrings = {i['parse-id']: i['mrs'] for i in ts['result']}
-textsById = {r['i-id']: r['i-input'] for r in ts['item']}
+mrsStrings = {f"{i['parse-id']}-{i['result-id']}": i['mrs'] for i in ts['result']}
+textsById = {f"{r['i-id']}": r['i-input'] for r in ts['item']}
+# tsql?
 
 app = Flask(__name__, static_url_path='')
 app.secret_key = '112233'
@@ -76,26 +77,36 @@ def getName():
         wql_q = request.args['query'].strip(' ')
         page = int(request.args['p'].strip(' '))
         x = requests.post("http://turastation:8080/query", json = {'q': wql_q})
-        sparql_result = requests.get("http://turastation:10035/repositories/gold-erg", 
+        sparql_result = requests.get("http://turastation:10035/repositories/gold-erg2", 
                                      params={'query': x.text}, 
                                      headers={'Accept':'application/json'})
         mrsURIsMatched = [y[0] for y in sparql_result.json()['values']]
-        mrsIdsMatched = [re.match('^<[^s]+/(\d+)/mrsi#mrs>$', uri).groups()[0] for uri in mrsURIsMatched]
-        mrsJsons = [mrsjsonEncode(loads(mrsStrings[int(id)])[0]) for id in mrsIdsMatched]
-        sentsMatched = [[int(id), textsById[int(id)]] for id in mrsIdsMatched]
+        mrsIdsMatched = [re.match('^<[^s]+/(\d+/\d+)/mrs>$', uri).groups()[0].replace('/','-') for uri in mrsURIsMatched]
+        # Creating the dictionary for each result where the values will be related to variables to highlight.
+        matchInfoDict = {}
+        for id in mrsIdsMatched:
+            if id not in matchInfoDict:
+                matchInfoDict[id] = [0] # Here will enter the variable names to be highlighted.
+            else :
+                matchInfoDict[id].append(0) # again.
+        matchInfoDict = {id: {'matches':listMatch, 'mrs':mrsjsonEncode(loads(mrsStrings[id])[0]), 'text':textsById[id.partition('-')[0]]} for (id, listMatch) in matchInfoDict.items()}
         
-        # Grouping sentences here:
-        n_pages = ceil(len(mrsJsons))
-        mrsJsons = [mrsJsons[(20*i):(20*i + 20)] for i in range(n_pages)]
-        sentsMatched = [sentsMatched[(20*i):(20*i + 20)] for i in range(n_pages)]
-        if page > n_pages: #handle this case in a better way.
-            page = n_pages
+        numMatches = len(mrsIdsMatched)
+        numSents = len(matchInfoDict)
+
+        # Grouping sentences of the page (assuming page of size 20 by now):
+        n_pages = ceil(len(matchInfoDict)/20)
+        matchesPage = dict(list(matchInfoDict.items())[(20*(page-1)):(20*(page-1) + 20)])
+        # if page > n_pages: #handle this case in a better way.
+        #     page = n_pages
+        
         return render_template("formresp.html.jinja", 
                                 sparql = x.text.replace('<','&lt;').replace('>','&gt;'),
                                 query_result = sparql_result.text.replace('<','&lt;').replace('>','&gt;'),
                                 wql_query = wql_q, 
-                                mrs_jsons = mrsJsons[page - 1],
-                                sentsM = sentsMatched[page - 1])
+                                matchesPage = matchesPage,
+                                page = page,
+                                quantMatches = (numMatches, numSents))
     else:
         return render_template("form.html.jinja", wql_query = "[* x]")
 
