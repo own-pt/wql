@@ -45,16 +45,6 @@
             vizCont.appendChild(divViz);
             MRS(divViz, JSON.parse(matchesPage[key]['mrs']));
         }
-
-        {# mrsJsons = mrsJsons.map(JSON.parse);
-        var vizCont = document.getElementById("mrsViz-results");
-        for (var i = 0; i < mrsJsons.length; i++) {
-            var divViz = document.createElement('div');
-            divViz.className = "mrsViz";
-            divViz.innerHTML = `<hr><strong>${sentsMatched[i][0]}.</strong> ${sentsMatched[i][1]} <br>`;
-            vizCont.appendChild(divViz);
-            MRS(divViz, mrsJsons[i]);
-        } #}
     </script>
 {% endblock %}}
 
