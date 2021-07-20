@@ -1,10 +1,8 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: 1b425a214d56d9dad4cb0e2f95035187160ad525e8ceac9e10849691b92e118e
 
 name:           wql
 version:        0.1.0.0
@@ -36,7 +34,9 @@ library
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
+      Spock
+    , aeson
+    , base >=4.7 && <5
     , containers
     , hsparql
     , mtl ==2.2.2
@@ -53,7 +53,9 @@ executable wql-exe
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      Spock
+    , aeson
+    , base >=4.7 && <5
     , containers
     , hsparql
     , mtl ==2.2.2
@@ -72,7 +74,9 @@ test-suite wql-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      Spock
+    , aeson
+    , base >=4.7 && <5
     , containers
     , hsparql
     , mtl ==2.2.2

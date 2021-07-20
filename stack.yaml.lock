@@ -5,6 +5,27 @@
 
 packages:
 - completed:
+    hackage: Spock-0.14.0.0@sha256:7e86ccc9e66ce0fdb84d1dcd328f852d3754c2dbfcb60d0e7e2f1cce2f32f177,3681
+    pantry-tree:
+      size: 1118
+      sha256: 6829dae9ba2492fae3e447afe13013dd863bd48fd5b8addfa74fc55d979de7b2
+  original:
+    hackage: Spock-0.14.0.0
+- completed:
+    hackage: Spock-core-0.14.0.0@sha256:b55935c2c2a259a9966999239ee6ec5e41f7d933a58baade687ffa4b4a46fe32,3457
+    pantry-tree:
+      size: 1113
+      sha256: c89cd43f14dd0cc960627f13e5bbc027172f0be85f277f998f06266d48ab8367
+  original:
+    hackage: Spock-core-0.14.0.0
+- completed:
+    hackage: reroute-0.6.0.0@sha256:43805b3fdc7ed1ba701cd10e249abc997b2291c8f374b8333bb2ea0e0d1dad0b,2382
+    pantry-tree:
+      size: 660
+      sha256: 0a27afabb1730147d6aa0ddf5cc6368951c4625e3706cb8f5388da9739372fa3
+  original:
+    hackage: reroute-0.6.0.0
+- completed:
     name: hsparql
     version: 0.3.6
     git: https://github.com/robstewart57/hsparql.git
@@ -31,7 +52,8 @@ packages:
     hackage: mtl-2.2.2
 snapshots:
 - completed:
-    size: 565266
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/17/5.yaml
-    sha256: 78e8ebabf11406261abbc95b44f240acf71802630b368888f6d758de7fc3a2f7
-  original: lts-17.5
+    size: 567037
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/17/9.yaml
+    sha256: d7d8d5106e53d1669964bd8bd2b0f88a5ad192d772f5376384b76738fd992311
+  original:
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/17/9.yaml

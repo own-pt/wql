@@ -27,6 +27,8 @@ dependencies:
 - hsparql
 - rdf4h
 - mtl == 2.2.2
+- aeson
+- Spock
 
 library:
   source-dirs: src

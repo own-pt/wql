@@ -1,10 +1,14 @@
 
-resolver: lts-17.5
+resolver:
+  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/17/9.yaml
 
 packages:
 - .
 
 extra-deps:
+- Spock-0.14.0.0
+- Spock-core-0.14.0.0
+- reroute-0.6.0.0
 - git: https://github.com/robstewart57/hsparql.git
   commit: 7db683d8e47d5b383673a662aaec21380997107b
 - rdf4h-4.0.2
