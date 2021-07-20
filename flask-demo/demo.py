@@ -12,6 +12,9 @@ from math import ceil
 import requests
 import re
 
+ALLEGROGRAPH_ENDPOINT = "http://localhost:10035/repositories/gold-erg2"
+SPOCK_ENDPOINT = "http://localhost:8080/query"
+
 # grm = '/Users/ar/hpsg/simpleDBpediaQA/erg.dat'
 # ts = itsdb.TestSuite('/Users/ar/hpsg/simpleDBpediaQA/test.p')
 ts = itsdb.TestSuite('/home/gambitura/workspace/erg/trunk/tsdb/gold/mrs')
@@ -76,8 +79,8 @@ def getName():
         # TODO: Handle request errors:
         wql_q = request.args['query'].strip(' ')
         page = int(request.args['p'].strip(' '))
-        x = requests.post("http://turastation:8080/query", json = {'q': wql_q})
-        sparql_result = requests.get("http://turastation:10035/repositories/gold-erg2", 
+        x = requests.post(SPOCK_ENDPOINT, json = {'q': wql_q})
+        sparql_result = requests.get(ALLEGROGRAPH_ENDPOINT, 
                                      params={'query': x.text}, 
                                      headers={'Accept':'application/json'})
         mrsURIsMatched = [(y[0], y[1:]) for y in sparql_result.json()['values']]
