@@ -80,16 +80,21 @@ def getName():
         sparql_result = requests.get("http://turastation:10035/repositories/gold-erg2", 
                                      params={'query': x.text}, 
                                      headers={'Accept':'application/json'})
-        mrsURIsMatched = [y[0] for y in sparql_result.json()['values']]
-        mrsIdsMatched = [re.match('^<[^s]+/(\d+/\d+)/mrs>$', uri).groups()[0].replace('/','-') for uri in mrsURIsMatched]
+        mrsURIsMatched = [(y[0], y[1:]) for y in sparql_result.json()['values']]
+        mrsIdsMatched = [(re.match('^<[^s]+/(\d+/\d+)/mrs>$', uri).groups()[0].replace('/','-'),
+                          [x.strip("<>").rpartition("#")[-1] for x in listURIs])
+                        for (uri, listURIs) in mrsURIsMatched]
         # Creating the dictionary for each result where the values will be related to variables to highlight.
         matchInfoDict = {}
-        for id in mrsIdsMatched:
+        for (id, matchInfoList) in mrsIdsMatched:
             if id not in matchInfoDict:
-                matchInfoDict[id] = [0] # Here will enter the variable names to be highlighted.
+                matchInfoDict[id] = [matchInfoList] # Here will enter the variable names to be highlighted.
             else :
-                matchInfoDict[id].append(0) # again.
-        matchInfoDict = {id: {'matches':listMatch, 'mrs':mrsjsonEncode(loads(mrsStrings[id])[0]), 'text':textsById[id.partition('-')[0]]} for (id, listMatch) in matchInfoDict.items()}
+                matchInfoDict[id].append(matchInfoList) # again.
+        matchInfoDict = {id: {'matches':listMatch, 
+                         'mrs':mrsjsonEncode(loads(mrsStrings[id])[0]), 
+                         'text':textsById[id.partition('-')[0]]} 
+                        for (id, listMatch) in matchInfoDict.items()}
         
         numMatches = len(mrsIdsMatched)
         numSents = len(matchInfoDict)
