@@ -12,23 +12,24 @@
             {{query_result}}
         </div> #}
         <strong style="text-align: center">{{quantMatches[0]}} in {{quantMatches[1]}} sentences</strong><br>
-        <strong>Showing page {{page}} of {{n_pages}}</strong>
-        <div>
-            {% if page != 1 %}
-                <a href="../test-form?query={{wql_query}}&p={{page-1}}" class="next">&laquo;</a> 
-            {% endif %}
-            {% if page != n_pages %}
-                <a href="../test-form?query={{wql_query}}&p={{page+1}}" class="next">&raquo;</a>   
-            {% endif %} 
-        </div>
-        <div id="mrsViz-results"></div>
+        <strong>Showing page {{page}} of {{n_pages}}</strong> 
+        <div style="float:right">
         {% if page != 1 %}
             <a href="../test-form?query={{wql_query}}&p={{page-1}}" class="next">&laquo;</a> 
         {% endif %}
-
         {% if page != n_pages %}
             <a href="../test-form?query={{wql_query}}&p={{page+1}}" class="next">&raquo;</a>   
-        {% endif %} 
+        {% endif %}
+        </div>
+        <div id="mrsViz-results"></div>
+        <div style="float:right">
+        {% if page != 1 %}
+            <a href="../test-form?query={{wql_query}}&p={{page-1}}" class="next">&laquo;</a> 
+        {% endif %}
+        {% if page != n_pages %}
+            <a href="../test-form?query={{wql_query}}&p={{page+1}}" class="next">&raquo;</a>   
+        {% endif %}
+        </div>
     </div>
 
     <script type="text/javascript">
