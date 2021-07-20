@@ -2,6 +2,7 @@
 
 module SparqlGenerator where
 
+import GHC.Unicode ( isSpace, isAlpha, isDigit, isAlphaNum )
 import Text.ParserCombinators.ReadP as RP
 import Data 
 import Database.HSparql.QueryGenerator as QG
@@ -24,6 +25,7 @@ data TransformData = TransformData
   , mrsVar :: QG.Variable
   , prefixes :: [QG.Prefix]
   , patterns :: Query [QG.Pattern]
+  , selectList :: [QG.Variable]
   }
 
 generateSPARQL = createSelectQuery . wqlTransformation . fst . last . readP_to_S wql 
@@ -43,10 +45,11 @@ wqlTransformation w@(WQL p h) =
             (return Map.empty)
             mrsVar
             prefixes
-            ((: []) <$> triple mrsVar (rdf .:. "type") (mrs .:. "MRS")))
+            ((: []) <$> triple mrsVar (rdf .:. "type") (mrs .:. "MRS"))
+            [mrsVar])
     s1 <- consTransformation h s
     patterns s1
-    selectVars [mrsVar]
+    selectVars $ selectList s1
 
 consTransformation :: Maybe [Cons] -> Query TransformData -> Query TransformData
 consTransformation (Just (x : xs)) s =
@@ -286,10 +289,12 @@ createVar varName s =
     else
       do
         v <- var
-        return $ os {varDict = return $ Map.insert varName v dict}
+        return $ os {varDict = return $ Map.insert varName v dict, selectList = selectList os ++ [v]}
 
 addingTriple :: Query QG.Pattern -> Query TransformData -> Query TransformData
 addingTriple t s =
   do
     os <- s
     return $ os {patterns = (:) <$> t <*> patterns os}
+
+    
