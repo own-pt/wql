@@ -11,11 +11,12 @@
         {# <script type="text/javascript" src="http://127.0.0.1:5000/js/dmrs.js" charset="utf-8"></script> #}
     </head>
     <body> 
-        <p id="into-text" style="text-align: center;">This demo is a test for the reworked WeSearch Query Language (WQL) which is documented <a href="https://github.com/own-pt/wql">here</a> and depends on <a href="https://github.com/own-pt/delphin-rdf">this</a> RDF generation.</p>
+        <p id="intro-text" style="text-align: center;">This demo is a test for the reworked WeSearch Query Language (WQL) which is documented <a href="https://github.com/own-pt/wql">here</a> and depends on <a href="https://github.com/own-pt/delphin-rdf">this</a> RDF generation.</p>
         <div class="centered">
             <form method="get">
                 <strong>WQL query</strong><br>
                 <textarea id="query" name="query" rows="5" cols="100">{{wql_query}}</textarea><br>
+                <input type="text" name="p" value="1" style="display: none">    
                 <input type="submit" value="Submit" style="margin-top: 4px;">
             </form>
         </div><br>

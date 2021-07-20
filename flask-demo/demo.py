@@ -105,6 +105,7 @@ def getName():
                                 query_result = sparql_result.text.replace('<','&lt;').replace('>','&gt;'),
                                 wql_query = wql_q, 
                                 matchesPage = matchesPage,
+                                n_pages = n_pages,
                                 page = page,
                                 quantMatches = (numMatches, numSents))
     else:
