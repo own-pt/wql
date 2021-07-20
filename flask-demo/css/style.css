@@ -12,6 +12,21 @@
     margin-top: 10px; 
 }  
 
+.next {
+    background-color: rgb(230, 230, 230);
+    color: black;
+    text-decoration: none;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    border-radius: 50%;
+}
+
+.next:hover {
+    background-color: rgb(216, 216, 216);
+}
+
 /* Add a background color to the button if it is clicked on (add the .active class with JS), and when you move the mouse over it (hover) */
 .active, .collapsible:hover {
     background-color: #ccc;
