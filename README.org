@@ -1,5 +1,14 @@
 #+title: WQL Query Language
 
+* Running demo of WSI
+
+You need a docker with AllegroGraph running in the background.
+Take a profile in a specific path, use [[https://github.com/own-pt/delphin-rdf][delphin-rdf]] to generate the MRS-RDF representation of the profile.
+Then, you create a repository in AllegroGraph and load that MRS-RDF file. The URL `http://localhost:10035/repositories/{repository-name}` will be the URL of the requests (assuming that AllegroGraph is running on port 10035). Go to file `demo.py` in `flask-demo` directory and manually input your url in the variable `ALLEGROGRAPH_ENDPOINT` on the top of the file.
+Use stack to build this repository and run `stack exec wql-exe`, it'll create the haskell web API that converts from  WQL to SPARQL and keep it running in the backgroung. The endpoint to the POST queries is `http://localhost:8080/query` and the parameter is `q`. You can test it running `curl -H "Content-Type: application/json" -d '{ "q" : "*_v_*[ARG3 y]"}' http://localhost:8080/query`
+After that, you need to create the python web server that hosts WSI. Go to `flask-demo`, run `export FLASK_APP=demo`; then run `flask run` (this assumes you already have flask installed). Then, in the URL `http://127.0.0.1:5000/test-form` there will be the WSI demo.
+The query `[* x]` is not running.
+
 * Examples
 
 [ LTOP: h0
