@@ -115,6 +115,7 @@ atomicTransform pred@(Predicate _ (Just epName) _ _ _) s =
   do
     s1 <- createVar epName s
     dict <- varDict s1
+    epLabelVar <- var
     let Just epVar = Map.lookup epName dict
         s2 = addingTriple
              (triple
@@ -122,24 +123,38 @@ atomicTransform pred@(Predicate _ (Just epName) _ _ _) s =
                (prefixes s1 !! 0 .:. "hasEP")
                epVar)
              (return s1)
-        s3 = putTop pred epVar s2
-        s4 = putPred pred epVar s3
-        s5 = processArgs (predargs pred) epVar s4
-    s5
+        s3 = addingTriple
+             (triple
+               epVar
+               (prefixes s1 !! 3 .:. "label")
+               epLabelVar)
+             s2
+        s4 = putTop pred epVar s3
+        s5 = putPred pred epVar s4
+        s6 = processArgs (predargs pred) epVar s5
+    s6 >>= (\x -> return $ x {selectList = selectList x ++ [epLabelVar]})
+    
 atomicTransform pred s =
   do
     os <- s
     epVar <- var
+    epLabelVar <- var
     let s1 = addingTriple
              (triple
                (mrsVar os)
                (prefixes os !! 0 .:. "hasEP")
                epVar)
              s
-        s2 = putTop pred epVar s1
-        s3 = putPred pred epVar s2
-        s4 = processArgs (predargs pred) epVar s3
-    s4
+        s2 = addingTriple
+             (triple
+               epVar
+               (prefixes os !! 3 .:. "label")
+               epLabelVar)
+             s1
+        s3 = putTop pred epVar s2
+        s4 = putPred pred epVar s3
+        s5 = processArgs (predargs pred) epVar s4
+    s5 >>= (\x -> return $ x {selectList = selectList x ++ [epLabelVar]})
   
 -- hardcoding the creating of the hcons, review later
 putTop :: Predicate -> QG.Variable -> Query TransformData -> Query TransformData
@@ -289,7 +304,7 @@ createVar varName s =
     else
       do
         v <- var
-        return $ os {varDict = return $ Map.insert varName v dict, selectList = selectList os ++ [v]}
+        return $ os {varDict = return $ Map.insert varName v dict, selectList = selectList os}
 
 addingTriple :: Query QG.Pattern -> Query TransformData -> Query TransformData
 addingTriple t s =
