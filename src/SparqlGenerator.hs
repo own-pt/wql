@@ -2,10 +2,10 @@
 
 module SparqlGenerator where
 
-import GHC.Unicode ( isSpace, isAlpha, isDigit, isAlphaNum )
 import Text.ParserCombinators.ReadP as RP
 import Data 
 import Database.HSparql.QueryGenerator as QG
+import Database.HSparql.Connection
 import qualified Data.Text as T
 import qualified Data.Map as Map
 import WQL (wql, pushNots)
@@ -84,28 +84,28 @@ predExprTransformation (P pred) s =
 predExprTransformation (And pred1 pred2) s =
   do
     os <- s
-    s1 <- predExprTransformation pred1 $ return $ TransformData (varDict os) (mrsVar os) (prefixes os) (return [])
-    s2 <- predExprTransformation pred2 $ return $ TransformData (varDict s1) (mrsVar os) (prefixes os) (return [])
+    s1 <- predExprTransformation pred1 $ return $ os {patterns = return []}
+    s2 <- predExprTransformation pred2 $ return $ s1 {patterns = return []}
     let p0 = patterns os
         p1 = patterns s1
         p2 = patterns s2
-    return $ TransformData (varDict s2) (mrsVar os) (prefixes os) ((++) <$> p0 <*> p1 *> p2)    
+    return $ s2 {patterns = (++) <$> p0 <*> p1 *> p2}
 predExprTransformation (Or pred1 pred2) s =
   do
     os <- s
-    s1 <- predExprTransformation pred1 $ return $ TransformData (varDict os) (mrsVar os) (prefixes os) (return [])
-    s2 <- predExprTransformation pred2 $ return $ TransformData (varDict s1) (mrsVar os) (prefixes os) (return [])
+    s1 <- predExprTransformation pred1 $ return $ os {patterns = return []}
+    s2 <- predExprTransformation pred2 $ return $ s1 {patterns = return []}
     let p0 = patterns os
         p1 = patterns s1
         p2 = patterns s2
-    return $ TransformData (varDict s2) (mrsVar os) (prefixes os) ((:) <$> union p1 p2 <*> p0)
+    return $ s2 {patterns = (:) <$> union p1 p2 <*> p0}
 predExprTransformation (Not pred) s =
   do
     os <- s
-    s1 <- predExprTransformation pred $ return $ TransformData (varDict os) (mrsVar os) (prefixes os) (return [])
+    s1 <- predExprTransformation pred $ return $ os {patterns = return []}
     let p0 = patterns os
         p1 = patterns s1
-    return $ TransformData (varDict s1) (mrsVar os) (prefixes os) ((:) <$> filterNotExists p1 <*> p0)
+    return $ s1 {patterns = (:) <$> filterNotExists p1 <*> p0}
 
 atomicTransform :: Predicate -> Query TransformData -> Query TransformData
 atomicTransform pred@(Predicate _ (Just epName) _ _ _) s =
@@ -250,7 +250,7 @@ putPredText predicateVar predText modf s =
 processArgs :: Maybe [Arg] -> QG.Variable -> Query TransformData -> Query TransformData
 processArgs (Just ((Arg role (Just holeName)):xs)) epVar s =
   do
-    os <- s
+    os <- createVar holeName s
     dict <- varDict os
     let Just v = Map.lookup holeName dict
     case role of
@@ -283,13 +283,13 @@ createVar varName s =
     dict <- varDict os
     if Map.member varName dict
       then s
-      else
+    else
       do
         v <- var
-        return $ TransformData (return $ Map.insert varName v dict) (mrsVar os) (prefixes os) (patterns os)
+        return $ os {varDict = return $ Map.insert varName v dict}
 
 addingTriple :: Query QG.Pattern -> Query TransformData -> Query TransformData
 addingTriple t s =
   do
     os <- s
-    return $ TransformData (varDict os) (mrsVar os) (prefixes os) ((:) <$> t <*> patterns os)
+    return $ os {patterns = (:) <$> t <*> patterns os}
