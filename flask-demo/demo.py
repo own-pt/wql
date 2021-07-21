@@ -14,7 +14,6 @@ import re
 
 ALLEGROGRAPH_ENDPOINT = "http://localhost:10035/repositories/gold-erg2"
 SPOCK_ENDPOINT = "http://localhost:8080/query"
-
 # grm = '/Users/ar/hpsg/simpleDBpediaQA/erg.dat'
 # ts = itsdb.TestSuite('/Users/ar/hpsg/simpleDBpediaQA/test.p')
 ts = itsdb.TestSuite('/home/gambitura/workspace/erg/trunk/tsdb/gold/mrs')
@@ -84,7 +83,7 @@ def getName():
                                      params={'query': x.text}, 
                                      headers={'Accept':'application/json'})
         mrsURIsMatched = [(y[0], y[1:]) for y in sparql_result.json()['values']]
-        mrsIdsMatched = [(re.match('^<[^s]+/(\d+/\d+)/mrs>$', uri).groups()[0].replace('/','-'),
+        mrsIdsMatched = [(re.match('^<[^\s]+/(\d+/\d+)/mrs>$', uri).groups()[0].replace('/','-'),
                           [x.strip("<>").rpartition("#")[-1] for x in listURIs])
                         for (uri, listURIs) in mrsURIsMatched]
         # Creating the dictionary for each result where the values will be related to variables to highlight.
