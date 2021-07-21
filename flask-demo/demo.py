@@ -66,7 +66,7 @@ def showMRSpage():
 def showDMRSpage():
     return render_template("dmrs-list.html.jinja", sents = list(sents.items()))
 
-@app.route('/test-form', methods = ['GET', 'POST'])
+@app.route('/query', methods = ['GET', 'POST'])
 def getName():
     # if request.method == 'POST':
     #     nome1 = request.form['fname']
