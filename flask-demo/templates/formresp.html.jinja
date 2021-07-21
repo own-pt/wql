@@ -50,11 +50,31 @@
         var vizCont = document.getElementById("mrsViz-results");
         for (var key in matchesPage) {
             var divViz = document.createElement('div');
-            divViz.className = "mrsViz";
-            divViz.innerHTML = `<hr><strong>${key}.</strong> ${matchesPage[key]['text']} <br>`;
             vizCont.appendChild(divViz);
+            divViz.className = "mrsViz";
+            divViz.innerHTML = `<hr><strong>${key}.</strong> ${matchesPage[key]['text']} <br><br>`;
+            divMatch = document.createElement('div');
+            divMatch.innerHTML = `Showing match 1 of ${matchesPage[key]['matches'].length}`;
+            divViz.appendChild(divMatch);
             MRS(divViz, JSON.parse(matchesPage[key]['mrs']));
+            
+            {# // Creating the highlight:
+            rels = divViz.getElementsByTagName("svg")[0]
+                         .children[1]
+                         .children[0]
+                         .children[3].children[1] // getting the RELS g tag #}
         }
     </script>
 {% endblock %}}
+
+{#             vizCont.appendChild(divViz);
+            
+            divViz.className = "mrsViz";
+            divViz.innerHTML = `<hr><strong>${key}.</strong> ${matchesPage[key]['text']} <br><br>`;
+            
+            divMatch = document.createElement('div');
+            divMatch.innerHTML = `Showing match 1 of ${matchesPage[key]['matches'].length}`
+            divViz.appendChild(divMatch)
+            
+            MRS(divViz, JSON.parse(matchesPage[key]['mrs'])); #}
 

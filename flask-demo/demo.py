@@ -116,7 +116,7 @@ def getName():
                                 page = page,
                                 quantMatches = (numMatches, numSents))
     else:
-        return render_template("form.html.jinja", wql_query = "[* x]")
+        return render_template("form.html.jinja", wql_query = "y:*_v_*[arg2 x]")
 
 if __name__ == "__main__":
     app.run()
