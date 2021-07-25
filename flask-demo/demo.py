@@ -82,7 +82,7 @@ def getName():
         sparql_result = requests.get(ALLEGROGRAPH_ENDPOINT, 
                                      params={'query': x.text}, 
                                      headers={'Accept':'application/json'})
-        mrsURIsMatched = [(y[0], y[1:]) for y in sparql_result.json()['values']]
+        mrsURIsMatched = [(y[-1], y[:-1]) for y in sparql_result.json()['values']]
         mrsIdsMatched = [(re.match('^<[^\s]+/(\d+/\d+)/mrs>$', uri).groups()[0].replace('/','-'),
                           [x.strip("<>").rpartition("#")[-1] for x in listURIs])
                         for (uri, listURIs) in mrsURIsMatched]
