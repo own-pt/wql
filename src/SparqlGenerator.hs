@@ -132,7 +132,7 @@ atomicTransform pred@(Predicate _ (Just epName) _ _ _) s =
         s4 = putTop pred epVar s3
         s5 = putPred pred epVar s4
         s6 = processArgs (predargs pred) epVar s5
-    s6 >>= (\x -> return $ x {selectList = selectList x ++ [epLabelVar]})
+    s6 >>= (\x -> return $ x {selectList = epLabelVar : selectList x})
     
 atomicTransform pred s =
   do
@@ -154,7 +154,7 @@ atomicTransform pred s =
         s3 = putTop pred epVar s2
         s4 = putPred pred epVar s3
         s5 = processArgs (predargs pred) epVar s4
-    s5 >>= (\x -> return $ x {selectList = selectList x ++ [epLabelVar]})
+    s5 >>= (\x -> return $ x {selectList = epLabelVar : selectList x})
   
 -- hardcoding the creating of the hcons, review later
 putTop :: Predicate -> QG.Variable -> Query TransformData -> Query TransformData
@@ -272,9 +272,13 @@ processArgs (Just ((Arg role (Just holeName)):xs)) epVar s =
     dict <- varDict os
     let Just v = Map.lookup holeName dict
     case role of
-      "*" -> addingTriple
-             (triple epVar (head (prefixes os) .:. T.pack "role") v)
-             (return os)
+      "*" ->
+        do
+          s1 <- addingTriple
+                (triple epVar (head (prefixes os) .:. T.pack "role") v)
+                (return os)
+          s2 <- processArgs (Just xs) epVar (return s1)
+          return s2 {selectList = v : selectList s2}
       _ -> if '*' `elem` role
            then
              do
@@ -283,13 +287,18 @@ processArgs (Just ((Arg role (Just holeName)):xs)) epVar s =
                s1 <- addingTriple
                      (triple epVar roleV v)
                      s
-               addingTriple
-                 (filterExpr $ regex roleV newRoleText)
-                 (return s1)
+               s2 <- addingTriple
+                     (filterExpr $ regex roleV newRoleText)
+                     (return s1)
+               s3 <- processArgs (Just xs) epVar (return s2)
+               return s3 {selectList = v : selectList s3}
            else
-             addingTriple
-             (triple epVar (head (prefixes os) .:. (T.toLower . T.pack) role) v)
-             (return os)
+             do
+               s1 <- addingTriple
+                     (triple epVar (head (prefixes os) .:. (T.toLower . T.pack) role) v)
+                     (return os)
+               s2 <- processArgs (Just xs) epVar (return s1)
+               return s2 {selectList = v : selectList s2}
 processArgs _ _ s = s
 
         
