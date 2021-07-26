@@ -57,6 +57,57 @@
             divMatch.innerHTML = `Showing match 1 of ${matchesPage[key]['matches'].length}`;
             divViz.appendChild(divMatch);
             MRS(divViz, JSON.parse(matchesPage[key]['mrs']));
+
+            // Normalizing predicates:
+            // The matches is an array of arrays. Those internal arrays are of the form 
+            // [predicate_label, variables to highlight in that ep, predicate_label, variables to highlight in that ep, ...]
+            // We need to normalize the predicate label to make a search inside the svg text tags of the MRS
+            var predPat = /"(.+)<(\d+),(\d+)>"/; 
+            var varPat = /variable-(.+)/;
+
+            var normalizedMatches = matchesPage[key]['matches'].map((xs) => {
+                var matchObj = {};
+                var key = "teste";
+                xs.forEach((x) => {
+                    if (x.match(predPat)) {
+                        key = `${x.match(predPat)[1]}⟨${x.match(predPat)[2]}:${x.match(predPat)[3]}⟩`;
+                        matchObj[key] = [];
+                    } else {
+                        if (x.match(varPat)) {
+                            matchObj[key] = matchObj[key].concat(x.match(varPat)[1]);
+                        } else { // CARG case
+                            matchObj[key] = matchObj[key].concat(x); //review
+                        }
+                    }
+                });
+                return matchObj;
+            });
+            
+            {# var normalizedMatches = matchesPage[key]['matches'].map((xs) => {
+                return xs.map((x) =>{
+                    return x.replaceAll('"', '') 
+                            .replaceAll('<', '⟨')
+                            .replaceAll('>', '⟩')
+                            .replaceAll(',', ':');
+                })
+            }); // This must be reviewed later as it assumes '"', '<' and '>' only appear in the predicate label and in the way we expect: '"predicate<x,y>"'. Replace with regex. #}
+
+            // Now, we search for the EP svg group that contains this predicate in this MRS
+            var MRSsvg= divViz.getElementsByTagName("svg")[0]
+            var texts = MRSsvg.getElementsByTagName("text")
+            for (var pred in normalizedMatches[0]) {
+                for (var text of texts) {
+                    if (text.textContent === pred) {
+                        var EPgroup = text.parentNode;
+                        text.style.fill = "blue";
+                        break;
+                    }
+                }
+                for (var varToHighlight of normalizedMatches[0][pred]) {
+                    var varTag = EPgroup.querySelector(`[title='${varToHighlight}']`);
+                    varTag.style.fill = "blue";
+                }
+            }
             
             {# // Creating the highlight:
             rels = divViz.getElementsByTagName("svg")[0]
