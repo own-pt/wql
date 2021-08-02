@@ -1,4 +1,4 @@
-function MRS(parentElement, mrsData){
+function MRS(parentElement, textElement, mrsData){
     // Constant pixel sizes used
     const MAXWIDTH = 600;     // width before a list of elements is wrapped 
     const XGAP = 5;           // horizontal gap between elements
@@ -276,7 +276,11 @@ function MRS(parentElement, mrsData){
 
                 // highlight variables
                 var dataQuery = "[data-var='" + $this.data('var') + "']";
-                $(node).find(dataQuery).css({fill: 'red'}); 
+                var toHighlight = node.querySelectorAll(dataQuery);
+                toHighlight.forEach(x => {
+                    x.style.setProperty('--old-fill', x.style.fill);
+                    x.style.fill = "red";
+                });
 
                 // highlight input text span if variable has lnk data
                 var lnks = argZeroes[this.innerHTML];
@@ -284,7 +288,7 @@ function MRS(parentElement, mrsData){
                     // no lnks for this variable
                     return;
 
-                var $inputElem = $('#text-input');
+                var $inputElem = $(textElement);
                 var inputText = $inputElem.html();
                 
                 // create an arrary of binary values indicating which characters
@@ -320,10 +324,13 @@ function MRS(parentElement, mrsData){
             function (event){
                 // remove highlighted variables 
                 var dataQuery = "[data-var='" + $(this).data('var') + "']";
-                $(node).find(dataQuery).css({fill: 'black'}); 
+                node.querySelectorAll(dataQuery).forEach(x => {
+                    x.style.fill = x.style.getPropertyValue('--old-fill');
+                    x.style.removeProperty('--old-fill');
+                });
                 
                 // reset highlighted input string
-                var $inputElem = $('#text-input');
+                var $inputElem = $(textElement);
                 $inputElem.html($inputElem.html().replace(/<\/?span[^>]*>/g,""));
             }
         ).filter(function (){

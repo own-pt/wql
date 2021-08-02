@@ -52,11 +52,16 @@
             var divViz = document.createElement('div');
             vizCont.appendChild(divViz);
             divViz.className = "mrsViz";
-            divViz.innerHTML = `<hr><strong>${key}.</strong> ${matchesPage[key]['text']} <br><br>`;
+            divViz.innerHTML = `<hr><strong>${key}.</strong> `;
+            var texto = document.createElement('text');
+            texto.style.display = "inline";
+            texto.innerHTML = matchesPage[key]['text'];
+            divViz.appendChild(texto);
+            divViz.innerHTML = divViz.innerHTML.concat("<br><br>");
             divMatch = document.createElement('div');
             divMatch.innerHTML = `Showing match 1 of ${matchesPage[key]['matches'].length}`;
             divViz.appendChild(divMatch);
-            MRS(divViz, JSON.parse(matchesPage[key]['mrs']));
+            MRS(divViz, texto, JSON.parse(matchesPage[key]['mrs']));
 
             // Normalizing predicates:
             // The matches is an array of arrays. Those internal arrays are of the form 
@@ -82,15 +87,6 @@
                 });
                 return matchObj;
             });
-            
-            {# var normalizedMatches = matchesPage[key]['matches'].map((xs) => {
-                return xs.map((x) =>{
-                    return x.replaceAll('"', '') 
-                            .replaceAll('<', '⟨')
-                            .replaceAll('>', '⟩')
-                            .replaceAll(',', ':');
-                })
-            }); // This must be reviewed later as it assumes '"', '<' and '>' only appear in the predicate label and in the way we expect: '"predicate<x,y>"'. Replace with regex. #}
 
             // Now, we search for the EP svg group that contains this predicate in this MRS
             var MRSsvg= divViz.getElementsByTagName("svg")[0]
@@ -108,24 +104,7 @@
                     varTag.style.fill = "blue";
                 }
             }
-            
-            {# // Creating the highlight:
-            rels = divViz.getElementsByTagName("svg")[0]
-                         .children[1]
-                         .children[0]
-                         .children[3].children[1] // getting the RELS g tag #}
         }
     </script>
 {% endblock %}}
-
-{#             vizCont.appendChild(divViz);
-            
-            divViz.className = "mrsViz";
-            divViz.innerHTML = `<hr><strong>${key}.</strong> ${matchesPage[key]['text']} <br><br>`;
-            
-            divMatch = document.createElement('div');
-            divMatch.innerHTML = `Showing match 1 of ${matchesPage[key]['matches'].length}`
-            divViz.appendChild(divMatch)
-            
-            MRS(divViz, JSON.parse(matchesPage[key]['mrs'])); #}
 
