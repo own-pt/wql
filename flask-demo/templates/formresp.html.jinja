@@ -11,6 +11,9 @@
         {# <div id="mrs-results">
             {{query_result}}
         </div> #}
+        {% if n_pages == 0%}
+        <strong style="text-align: center">No matches were found.</strong><br>
+        {% else %}
         <strong style="text-align: center">{{quantMatches[0]}} matches in {{quantMatches[1]}} profile results.</strong><br>
         <strong>Showing page {{page}} of {{n_pages}}</strong> 
         <div style="float:right">
@@ -107,5 +110,6 @@
             }
         }
     </script>
-{% endblock %}}
+    {% endif %}
+{% endblock %}
 
