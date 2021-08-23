@@ -1,4 +1,4 @@
-function MRS(parentElement, textElement, mrsData){
+function MRS(parentElement, textId, mrsData){
     // Constant pixel sizes used
     const MAXWIDTH = 600;     // width before a list of elements is wrapped 
     const XGAP = 5;           // horizontal gap between elements
@@ -288,7 +288,8 @@ function MRS(parentElement, textElement, mrsData){
                     // no lnks for this variable
                     return;
 
-                var $inputElem = $(textElement);
+                console.log(textId);
+                var $inputElem = $(`#${textId}`);
                 var inputText = $inputElem.html();
                 
                 // create an arrary of binary values indicating which characters
@@ -318,7 +319,8 @@ function MRS(parentElement, textElement, mrsData){
                         start = c;
                     } 
                 }
-                $inputElem.html(tokens.join(''));                
+                // $(textElement).html(tokens.join(''));
+                $inputElem.html(tokens.join(''));               
             }
             ,
             function (event){
@@ -330,7 +332,8 @@ function MRS(parentElement, textElement, mrsData){
                 });
                 
                 // reset highlighted input string
-                var $inputElem = $(textElement);
+                $inputElem = $(`#${textId}`);
+                // $inputElem
                 $inputElem.html($inputElem.html().replace(/<\/?span[^>]*>/g,""));
             }
         ).filter(function (){

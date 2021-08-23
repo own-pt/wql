@@ -54,15 +54,16 @@
             divViz.className = "mrsViz";
             divViz.innerHTML = `<hr><strong>${key}.</strong> `;
             var texto = document.createElement('text');
-            texto.style.display = "inline";
-            texto.innerHTML = matchesPage[key]['text'];
+            // texto.style.display = "inline";
+            texto.textContent = matchesPage[key]['text'];
+            texto.id = key;
             divViz.appendChild(texto);
             divViz.innerHTML = divViz.innerHTML.concat("<br><br>");
             divMatch = document.createElement('div');
             divMatch.innerHTML = `Showing match 1 of ${matchesPage[key]['matches'].length}`;
             divViz.appendChild(divMatch);
-            MRS(divViz, texto, JSON.parse(matchesPage[key]['mrs']));
-
+            MRS(divViz, key, JSON.parse(matchesPage[key]['mrs']));
+            
             // Normalizing predicates:
             // The matches is an array of arrays. Those internal arrays are of the form 
             // [predicate_label, variables to highlight in that ep, predicate_label, variables to highlight in that ep, ...]
