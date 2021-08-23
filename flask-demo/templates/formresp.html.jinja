@@ -18,19 +18,19 @@
         <strong>Showing page {{page}} of {{n_pages}}</strong> 
         <div style="float:right">
         {% if page != 1 %}
-            <a href="../query?query={{wql_query}}&p={{page-1}}" class="next">&laquo;</a> 
+            <a href="../query?query={{wql_query}}&p={{page-1}}" class="nextPage">&laquo;</a> 
         {% endif %}
         {% if page != n_pages %}
-            <a href="../query?query={{wql_query}}&p={{page+1}}" class="next">&raquo;</a>   
+            <a href="../query?query={{wql_query}}&p={{page+1}}" class="nextPage">&raquo;</a>   
         {% endif %}
         </div>
         <div id="mrsViz-results"></div>
         <div style="float:right">
         {% if page != 1 %}
-            <a href="../query?query={{wql_query}}&p={{page-1}}" class="next">&laquo;</a> 
+            <a href="../query?query={{wql_query}}&p={{page-1}}" class="nextPage">&laquo;</a> 
         {% endif %}
         {% if page != n_pages %}
-            <a href="../query?query={{wql_query}}&p={{page+1}}" class="next">&raquo;</a>   
+            <a href="../query?query={{wql_query}}&p={{page+1}}" class="nextPage">&raquo;</a>   
         {% endif %}
         </div>
     </div>
