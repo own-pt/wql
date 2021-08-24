@@ -288,7 +288,6 @@ function MRS(parentElement, textId, mrsData){
                     // no lnks for this variable
                     return;
 
-                console.log(textId);
                 var $inputElem = $(`#${textId}`);
                 var inputText = $inputElem.html();
                 
