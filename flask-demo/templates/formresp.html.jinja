@@ -67,8 +67,35 @@
             but2.className = "nextMatch"
             var divMatch = document.createElement('span');
             but1.textContent = "<";
-            divMatch.textContent = `Showing match 1 of ${matchesPage[key]['matches'].length}`;
+            but1.style.visibility = "hidden";
+            divMatch.dataset.match = "1";
+            divMatch.dataset.matchMax = matchesPage[key]['matches'].length;
+            divMatch.textContent = `Match 1 of ${matchesPage[key]['matches'].length}`;
             but2.textContent = ">";
+            but2.style.visibility = "visible";
+            var matchPos = 1;
+            but1.addEventListener("click", function (e) {
+                var match = Number(this.nextElementSibling.dataset.match);
+                var matchMax = Number(this.nextElementSibling.dataset.matchMax);
+                this.nextElementSibling.dataset.match = match - 1;
+                this.nextElementSibling.textContent = `Match ${match - 1} of ${matchMax}`;
+                if (match - 1 === 1) {
+                    this.style.visibility = "hidden";
+                } else if (match === matchMax) {
+                    this.nextElementSibling.nextElementSibling.style.visibility = "visible";
+                }
+            });
+            but2.addEventListener("click", function (e) {
+                var match = Number(this.previousElementSibling.dataset.match);
+                var matchMax = Number(this.previousElementSibling.dataset.matchMax);
+                this.previousElementSibling.dataset.match = match + 1;
+                this.previousElementSibling.textContent = `Match ${match + 1} of ${matchMax}`;
+                if (match + 1 === matchMax) {
+                    this.style.visibility = "hidden";
+                } else if (match + 1 === 2) {
+                    this.previousElementSibling.previousElementSibling.style.visibility = "visible";
+                }
+            });
             divViz.appendChild(but1);
             divViz.appendChild(divMatch);
             divViz.appendChild(but2);
