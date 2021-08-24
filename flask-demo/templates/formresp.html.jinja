@@ -61,9 +61,19 @@
             texto.id = key;
             divViz.appendChild(texto);
             divViz.innerHTML = divViz.innerHTML.concat("<br><br>");
-            divMatch = document.createElement('div');
-            divMatch.innerHTML = `Showing match 1 of ${matchesPage[key]['matches'].length}`;
+            var but1 = document.createElement('button');
+            but1.className = "prevMatch"
+            var but2 = document.createElement('button');
+            but2.className = "nextMatch"
+            var divMatch = document.createElement('span');
+            but1.textContent = "<";
+            divMatch.textContent = `Showing match 1 of ${matchesPage[key]['matches'].length}`;
+            but2.textContent = ">";
+            divViz.appendChild(but1);
             divViz.appendChild(divMatch);
+            divViz.appendChild(but2);
+            divViz.appendChild(document.createElement('br'));
+
             MRS(divViz, key, JSON.parse(matchesPage[key]['mrs']));
             
             // Normalizing predicates:

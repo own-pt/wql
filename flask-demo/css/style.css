@@ -27,6 +27,16 @@
     background-color: rgb(216, 216, 216);
 }
 
+.prevMatch {
+    margin-right: 4px;
+    margin-bottom: 10px;
+    margin-left: 10px;
+}
+
+.nextMatch {
+    margin-left: 4px;
+}
+
 /* Add a background color to the button if it is clicked on (add the .active class with JS), and when you move the mouse over it (hover) */
 .active, .collapsible:hover {
     background-color: #ccc;
