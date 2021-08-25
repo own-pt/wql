@@ -279,7 +279,6 @@ function MRS(parentElement, textId, mrsData){
                 var toHighlight = node.querySelectorAll(dataQuery);
                 toHighlight.forEach(x => {
                     x.dataset.oldFill = x.style.fill;
-                    // x.style.setProperty('--old-fill', x.style.fill);
                     x.style.fill = "red";
                 });
 
@@ -319,7 +318,6 @@ function MRS(parentElement, textId, mrsData){
                         start = c;
                     } 
                 }
-                // $(textElement).html(tokens.join(''));
                 $inputElem.html(tokens.join(''));               
             }
             ,
@@ -328,7 +326,6 @@ function MRS(parentElement, textId, mrsData){
                 var dataQuery = "[data-var='" + $(this).data('var') + "']";
                 node.querySelectorAll(dataQuery).forEach(x => {
                     x.style.fill = x.dataset.oldFill;
-                    // x.style.removeProperty('--old-fill');
                     x.removeAttribute("data-old-fill");
                 });
                 
