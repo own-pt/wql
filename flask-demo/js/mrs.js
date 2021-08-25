@@ -278,7 +278,8 @@ function MRS(parentElement, textId, mrsData){
                 var dataQuery = "[data-var='" + $this.data('var') + "']";
                 var toHighlight = node.querySelectorAll(dataQuery);
                 toHighlight.forEach(x => {
-                    x.style.setProperty('--old-fill', x.style.fill);
+                    x.dataset.oldFill = x.style.fill;
+                    // x.style.setProperty('--old-fill', x.style.fill);
                     x.style.fill = "red";
                 });
 
@@ -326,8 +327,9 @@ function MRS(parentElement, textId, mrsData){
                 // remove highlighted variables 
                 var dataQuery = "[data-var='" + $(this).data('var') + "']";
                 node.querySelectorAll(dataQuery).forEach(x => {
-                    x.style.fill = x.style.getPropertyValue('--old-fill');
-                    x.style.removeProperty('--old-fill');
+                    x.style.fill = x.dataset.oldFill;
+                    // x.style.removeProperty('--old-fill');
+                    x.removeAttribute("data-old-fill");
                 });
                 
                 // reset highlighted input string
