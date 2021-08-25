@@ -51,6 +51,33 @@
         var queryBase = "SELECT ?s ?p ?o where {?s ?p ?o}"
         var matchesPage = {{matchesPage}};
         var vizCont = document.getElementById("mrsViz-results");
+        // Normalizing predicates and matches:
+        // The matches is an array of arrays. Those internal arrays are of the form 
+        // [predicate_label, variables to highlight in that ep, predicate_label, variables to highlight in that ep, ...]
+        // We need to normalize the predicate label to make a search inside the svg text tags of the MRS
+        var predPat = /"(.+)<(\d+),(\d+)>"/; 
+        var varPat = /variable-(.+)/;
+        var predKey = "";
+        for (var key in matchesPage) {
+            matchesPage[key]['matches'] = matchesPage[key]['matches'].map(xs => {
+                var matchObj = {};  
+                for (var x of xs) {
+                    if (x.match(predPat)) {
+                        predKey = `${x.match(predPat)[1]}⟨${x.match(predPat)[2]}:${x.match(predPat)[3]}⟩`;
+                        matchObj[predKey] = [];
+                    } else {
+                        if (x.match(varPat)) {
+                            matchObj[predKey].push(x.match(varPat)[1]);
+                        } else { //CARG case
+                            matchObj[predKey].push(x);
+                        } 
+                    }
+                }
+                return matchObj;
+            });
+        }
+
+
         for (var key in matchesPage) {
             var divViz = document.createElement('div');
             vizCont.appendChild(divViz);
@@ -75,6 +102,7 @@
             but2.style.visibility = "visible";
             var matchPos = 1;
             but1.addEventListener("click", function (e) {
+                // manipulation of elements to hide button when not needed.
                 var match = Number(this.nextElementSibling.dataset.match);
                 var matchMax = Number(this.nextElementSibling.dataset.matchMax);
                 this.nextElementSibling.dataset.match = match - 1;
@@ -84,6 +112,7 @@
                 } else if (match === matchMax) {
                     this.nextElementSibling.nextElementSibling.style.visibility = "visible";
                 }
+                // changing the highlight:
             });
             but2.addEventListener("click", function (e) {
                 var match = Number(this.previousElementSibling.dataset.match);
@@ -103,47 +132,30 @@
 
             MRS(divViz, key, JSON.parse(matchesPage[key]['mrs']));
             
-            // Normalizing predicates:
-            // The matches is an array of arrays. Those internal arrays are of the form 
-            // [predicate_label, variables to highlight in that ep, predicate_label, variables to highlight in that ep, ...]
-            // We need to normalize the predicate label to make a search inside the svg text tags of the MRS
-            var predPat = /"(.+)<(\d+),(\d+)>"/; 
-            var varPat = /variable-(.+)/;
-
-            var normalizedMatches = matchesPage[key]['matches'].map((xs) => {
-                var matchObj = {};
-                var key = "teste";
-                xs.forEach((x) => {
-                    if (x.match(predPat)) {
-                        key = `${x.match(predPat)[1]}⟨${x.match(predPat)[2]}:${x.match(predPat)[3]}⟩`;
-                        matchObj[key] = [];
-                    } else {
-                        if (x.match(varPat)) {
-                            matchObj[key] = matchObj[key].concat(x.match(varPat)[1]);
-                        } else { // CARG case
-                            matchObj[key] = matchObj[key].concat(x); //review
-                        }
-                    }
-                });
-                return matchObj;
-            });
-
             // Now, we search for the EP svg group that contains this predicate in this MRS
-            var MRSsvg= divViz.getElementsByTagName("svg")[0]
-            var texts = MRSsvg.getElementsByTagName("text")
-            for (var pred in normalizedMatches[0]) {
+            var MRSsvg= divViz.getElementsByTagName("svg")[0];
+            elementsToHighlight(matchesPage[key]['matches'][0], MRSsvg).forEach(x => {
+                x.style.fill = "blue";
+            });
+        }
+
+        function elementsToHighlight(normalizedMatch, MRSElement) {
+            var texts = MRSElement.getElementsByTagName("text");
+            var listElements = [];
+            for (var pred in normalizedMatch) {
                 for (var text of texts) {
                     if (text.textContent === pred) {
                         var EPgroup = text.parentNode;
-                        text.style.fill = "blue";
+                        listElements.push(text);
                         break;
                     }
                 }
-                for (var varToHighlight of normalizedMatches[0][pred]) {
+                for (var varToHighlight of normalizedMatch[pred]) {
                     var varTag = EPgroup.querySelector(`[title='${varToHighlight}']`);
-                    varTag.style.fill = "blue";
+                    listElements.push(varTag);
                 }
             }
+            return listElements;
         }
     </script>
     {% endif %}
