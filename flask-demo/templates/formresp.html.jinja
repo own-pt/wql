@@ -163,7 +163,6 @@
             var texts = MRSElement.getElementsByTagName("text");
             var listElements = [];
             for (var pred in normalizedMatch) {
-                console.log(pred);
                 for (var text of texts) {
                     // Search for the EP with the predicate:
                     if (text.textContent === pred) {
