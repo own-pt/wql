@@ -153,8 +153,6 @@
                     x.style.fill = "blue";
                 });
             });
-            
-            // Now, we search for the EP svg group that contains this predicate in this MRS
         }
 
         function elementsToHighlight(normalizedMatch, MRSElement) {
@@ -163,12 +161,13 @@
             for (var pred in normalizedMatch) {
                 console.log(pred);
                 for (var text of texts) {
+                    // Search for the EP with the predicate:
                     if (text.textContent === pred) {
                         var EPgroup = text.parentNode;
                         listElements.push(text);
                         break;
                     }
-                }
+                } // In this EP, finding the variables to highlight:
                 for (var varToHighlight of normalizedMatch[pred]) {
                     var varTag = EPgroup.querySelector(`[title='${varToHighlight}']`);
                     listElements.push(varTag);
