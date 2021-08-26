@@ -84,7 +84,7 @@ def getName():
                                      headers={'Accept':'application/json'})
         mrsURIsMatched = [(y[-1], y[:-1]) for y in sparql_result.json()['values']]
         mrsIdsMatched = [(re.match('^<[^\s]+/(\d+/\d+)/mrs>$', uri).groups()[0].replace('/','-'),
-                          [x.strip("<>").rpartition("#")[-1] for x in listURIs])
+                          [x.strip("<>").rpartition("#")[-1] for x in filter(lambda x: x is not None,listURIs)])
                         for (uri, listURIs) in mrsURIsMatched]
         # Creating the dictionary for each result where the values will be related to variables to highlight.
         matchInfoDict = {}
