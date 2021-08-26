@@ -82,19 +82,20 @@
 
         for (var key in matchesPage) {
             var divViz = document.createElement('div');
+            var texto = document.createElement('text');
+            var but1 = document.createElement('button');
+            var but2 = document.createElement('button');
+            var divMatch = document.createElement('span');
             vizCont.appendChild(divViz);
             divViz.className = "mrsViz";
             divViz.innerHTML = `<hr><strong>${key}.</strong> `;
-            var texto = document.createElement('text');
+            divViz.dataset.item = key;
             texto.textContent = matchesPage[key]['text'];
             texto.id = key;
             divViz.appendChild(texto);
             divViz.innerHTML = divViz.innerHTML.concat("<br><br>");
-            var but1 = document.createElement('button');
             but1.className = "prevMatch"
-            var but2 = document.createElement('button');
             but2.className = "nextMatch"
-            var divMatch = document.createElement('span');
             but1.textContent = "<";
             but1.style.visibility = "hidden";
             divMatch.dataset.match = "1";
@@ -103,6 +104,15 @@
             but2.textContent = ">";
             but2.style.visibility = "visible";
             var matchPos = 1;
+            divViz.appendChild(but1);
+            divViz.appendChild(divMatch);
+            divViz.appendChild(but2);
+            divViz.appendChild(document.createElement('br'));
+            MRS(divViz, key, JSON.parse(matchesPage[key]['mrs']));
+            var MRSsvg= divViz.getElementsByTagName("svg")[0];
+            elementsToHighlight(matchesPage[key]['matches'][0], MRSsvg).forEach(x => {
+                x.style.fill = "blue";
+            });
             but1.addEventListener("click", function (e) {
                 // manipulation of elements to hide button when not needed.
                 var match = Number(this.nextElementSibling.dataset.match);
@@ -115,6 +125,14 @@
                     this.nextElementSibling.nextElementSibling.style.visibility = "visible";
                 }
                 // changing the highlight:
+                MRSsvg= this.parentElement.querySelector('svg');
+                var itemChange = this.parentElement.dataset.item;
+                elementsToHighlight(matchesPage[itemChange]['matches'][match-1], MRSsvg).forEach(x => {
+                    x.style.fill = "black";
+                });
+                elementsToHighlight(matchesPage[itemChange]['matches'][match-2], MRSsvg).forEach(x => {
+                    x.style.fill = "blue";
+                });
             });
             but2.addEventListener("click", function (e) {
                 var match = Number(this.previousElementSibling.dataset.match);
@@ -126,25 +144,24 @@
                 } else if (match + 1 === 2) {
                     this.previousElementSibling.previousElementSibling.style.visibility = "visible";
                 }
+                MRSsvg= this.parentElement.querySelector('svg');
+                var itemChange = this.parentElement.dataset.item;
+                elementsToHighlight(matchesPage[itemChange]['matches'][match-1], MRSsvg).forEach(x => {
+                    x.style.fill = "black";
+                });
+                elementsToHighlight(matchesPage[itemChange]['matches'][match], MRSsvg).forEach(x => {
+                    x.style.fill = "blue";
+                });
             });
-            divViz.appendChild(but1);
-            divViz.appendChild(divMatch);
-            divViz.appendChild(but2);
-            divViz.appendChild(document.createElement('br'));
-
-            MRS(divViz, key, JSON.parse(matchesPage[key]['mrs']));
             
             // Now, we search for the EP svg group that contains this predicate in this MRS
-            var MRSsvg= divViz.getElementsByTagName("svg")[0];
-            elementsToHighlight(matchesPage[key]['matches'][0], MRSsvg).forEach(x => {
-                x.style.fill = "blue";
-            });
         }
 
         function elementsToHighlight(normalizedMatch, MRSElement) {
             var texts = MRSElement.getElementsByTagName("text");
             var listElements = [];
             for (var pred in normalizedMatch) {
+                console.log(pred);
                 for (var text of texts) {
                     if (text.textContent === pred) {
                         var EPgroup = text.parentNode;
