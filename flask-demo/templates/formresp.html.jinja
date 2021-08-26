@@ -64,7 +64,9 @@
                 for (var x of xs) {
                     if (x.match(predPat)) {
                         predKey = `${x.match(predPat)[1]}⟨${x.match(predPat)[2]}:${x.match(predPat)[3]}⟩`;
-                        matchObj[predKey] = [];
+                        if (!(predKey in matchObj)) { // the else is the repetition case of issue 19
+                            matchObj[predKey] = [];
+                        }
                     } else {
                         if (x.match(varPat)) {
                             matchObj[predKey].push(x.match(varPat)[1]);
