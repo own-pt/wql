@@ -102,7 +102,11 @@
             divMatch.dataset.matchMax = matchesPage[key]['matches'].length;
             divMatch.textContent = `Match 1 of ${matchesPage[key]['matches'].length}`;
             but2.textContent = ">";
-            but2.style.visibility = "visible";
+            if (matchesPage[key]['matches'].length !== 1) {
+                but2.style.visibility = "visible";
+            } else {
+                but2.style.visibility = "hidden";
+            }
             var matchPos = 1;
             divViz.appendChild(but1);
             divViz.appendChild(divMatch);
