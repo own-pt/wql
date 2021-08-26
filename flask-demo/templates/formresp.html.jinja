@@ -145,7 +145,8 @@
                 this.previousElementSibling.textContent = `Match ${match + 1} of ${matchMax}`;
                 if (match + 1 === matchMax) {
                     this.style.visibility = "hidden";
-                } else if (match + 1 === 2) {
+                } 
+                if (match + 1 === 2) { //can't use else if because of the case where matchMax = 2.
                     this.previousElementSibling.previousElementSibling.style.visibility = "visible";
                 }
                 MRSsvg= this.parentElement.querySelector('svg');
