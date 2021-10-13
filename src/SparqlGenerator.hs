@@ -225,9 +225,47 @@ putPred _ epVar s = s
 putPredText :: QG.Variable -> Data.Pattern -> Maybe Char -> Query TransformData -> Query TransformData
 putPredText predicateVar predText modf s =
   do
-    os <- s
     if '*' `elem` predText
       then
+        triplesPred newPredText
+      else
+        triplesPred (T.pack predText)
+      where
+        newPredText = T.replace "*" ".*" $ T.pack predText
+        triplesPred t =
+          do
+            os <- s
+            v <- var
+            s1 <- case modf of
+                    Nothing -> addingTriple
+                               (triple
+                                 predicateVar
+                                 (prefixes os!!1 .:. "predText")
+                                 v)
+                               s
+                    Just '+' -> addingTriple
+                                (triple
+                                  predicateVar
+                                  (prefixes os!!1 .:. "hasLemma")
+                                  v)
+                                s
+                    Just '/' -> addingTriple
+                                (triple
+                                  predicateVar
+                                  (prefixes os!!1 .:. "hasPos")
+                                  v)
+                                s
+                    Just '=' -> addingTriple
+                                (triple
+                                  predicateVar
+                                  (prefixes os!!1 .:. "hasSense")
+                                  v)
+                                s
+            addingTriple
+              (filterExpr $ regex v t)
+              (return s1)
+       
+{-
       do
         v <- var
         let newPredText = T.replace "*" ".*" $ T.pack predText
@@ -264,7 +302,7 @@ putPredText predicateVar predText modf s =
         (prefixes os!!1 .:. "predText")
         (T.pack predText))
       s
-
+-}
 processArgs :: Maybe [Arg] -> QG.Variable -> Query TransformData -> Query TransformData
 processArgs (Just ((Arg role (Just holeName)):xs)) epVar s =
   do
