@@ -55,14 +55,14 @@ arglist = do
   return arglist_
 
 lemma = do
-  munch1 $ \c -> c `notElem` "?[]{}|!&_()^" && not (isSpace c)
+  munch1 $ \c -> c `notElem` "_[]{}|!()" && not (isSpace c)
 pos = do
   underlinePos <- char '_'
   charPos <- satisfy $ \c -> c `elem` "nvajrscpqxud"
   return [underlinePos, charPos]
 sense = do
   underlineSense <- char '_'
-  sense <- munch1 $ \c -> notElem c "?[]{}|!&_()^" && not (isSpace c)
+  sense <- munch1 $ \c -> notElem c "_[]{}|!()" && not (isSpace c)
   return $ underlineSense : sense
 
 predPat :: ReadP String
