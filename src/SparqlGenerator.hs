@@ -265,44 +265,6 @@ putPredText predicateVar predText modf s =
               (filterExpr $ regex v t)
               (return s1)
        
-{-
-      do
-        v <- var
-        let newPredText = T.replace "*" ".*" $ T.pack predText
-        s1 <- case modf of
-                Nothing -> addingTriple
-                           (triple
-                             predicateVar
-                             (prefixes os!!1 .:. "predText")
-                             v)
-                           s
-                Just '+' -> addingTriple
-                            (triple predicateVar
-                              (prefixes os!!1 .:. "hasLemma")
-                              v) 
-                            s
-                Just '/' -> addingTriple
-                            (triple predicateVar
-                              (prefixes os!!1 .:. "hasPos")
-                              v) --review this case; depends on delphin-rdf
-                            s
-                Just '=' -> addingTriple
-                            (triple
-                              predicateVar
-                              (prefixes os!!1 .:. "hasSense")
-                              v)
-                            s
-        addingTriple
-          (filterExpr $ regex v newPredText)
-          (return s1)
-      else
-      addingTriple
-      (triple
-        predicateVar
-        (prefixes os!!1 .:. "predText")
-        (T.pack predText))
-      s
--}
 processArgs :: Maybe [Arg] -> QG.Variable -> Query TransformData -> Query TransformData
 processArgs (Just ((Arg role (Just holeName)):xs)) epVar s =
   do
