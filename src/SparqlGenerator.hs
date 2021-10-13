@@ -232,35 +232,20 @@ putPredText predicateVar predText modf s =
         triplesPred (T.pack predText)
       where
         newPredText = T.replace "*" ".*" $ T.pack predText
+        modfToRDFRel Nothing = "predText"
+        modfToRDFRel (Just '+') = "hasLemma"
+        modfToRDFRel (Just '/') = "hasPos"
+        modfToRDFRel (Just '=') = "hasSense"
         triplesPred t =
           do
             os <- s
             v <- var
-            s1 <- case modf of
-                    Nothing -> addingTriple
-                               (triple
-                                 predicateVar
-                                 (prefixes os!!1 .:. "predText")
-                                 v)
-                               s
-                    Just '+' -> addingTriple
-                                (triple
-                                  predicateVar
-                                  (prefixes os!!1 .:. "hasLemma")
-                                  v)
-                                s
-                    Just '/' -> addingTriple
-                                (triple
-                                  predicateVar
-                                  (prefixes os!!1 .:. "hasPos")
-                                  v)
-                                s
-                    Just '=' -> addingTriple
-                                (triple
-                                  predicateVar
-                                  (prefixes os!!1 .:. "hasSense")
-                                  v)
-                                s
+            s1 <- addingTriple
+                  (triple
+                    predicateVar
+                    (prefixes os!!1 .:. modfToRDFRel modf)
+                    v)
+                  s
             addingTriple
               (filterExpr $ regex v t)
               (return s1)
