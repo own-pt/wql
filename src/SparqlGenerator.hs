@@ -126,12 +126,13 @@ predExprTransformation (Not pred) s =
     return $ s1 {patterns = (:) <$> filterNotExists p1 <*> p0}
 
 atomicTransform :: Predicate -> Query TransformData -> Query TransformData
-atomicTransform pred@(Predicate _ (Just epName) _ _ _) s =
+atomicTransform pred@(Predicate _ (Just handleName) _ _ _) s =
   do
-    s1 <- createVar epName s
+    s1 <- createVar handleName s
     dict <- varDict s1
     epLabelVar <- var
-    let Just epVar = Map.lookup epName dict
+    epVar <- var
+    let Just handleVar = Map.lookup handleName dict
         s2 = addingTriple
              (triple
                (mrsVar s1)
@@ -144,10 +145,16 @@ atomicTransform pred@(Predicate _ (Just epName) _ _ _) s =
                (prefixes s1 !! 3 .:. "label")
                epLabelVar)
              s2
-        s4 = putTop pred epVar s3
-        s5 = putPred pred epVar s4
-        s6 = processArgs (predargs pred) epVar s5
-    s6 >>= (\x -> return $ x {selectList = epLabelVar : selectList x})
+        s4 = addingTriple
+             (triple
+               epVar
+               (prefixes s1 !! 0 .:. "hasLabel")
+               handleVar)
+             s3
+        s5 = putTop pred epVar s4
+        s6 = putPred pred epVar s5
+        s7 = processArgs (predargs pred) epVar s6
+    s7 >>= (\x -> return $ x {selectList = epLabelVar : selectList x})
     
 atomicTransform pred s =
   do
