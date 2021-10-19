@@ -137,7 +137,7 @@ atomicTransform pred@(Predicate _ (Just handleName) _ _ _) s =
                (prefixes s1 !! 0 .:. "hasLabel")
                handleVar)
              s3
-        s5 = putTop pred epVar s4
+        s5 = putTop pred handleVar s4
         s6 = putPred pred epVar s5
         s7 = processArgs (predargs pred) epVar s6
     s7 >>= (\x -> return $ x {selectList = epLabelVar : selectList x})
@@ -166,14 +166,13 @@ atomicTransform pred s =
   
 -- hardcoding the creating of the hcons, review later
 putTop :: Predicate -> QG.Variable -> Query TransformData -> Query TransformData
-putTop predicate epVar s =
+putTop predicate handleVar s =
   do
     os <- s
     if predtop predicate
     then
       do
         topH <- var
-        labelVar <- var
         hconsVar <- var
         let s1 = addingTriple
                  (triple
@@ -184,7 +183,7 @@ putTop predicate epVar s =
             s2 = addingTriple
                  (triple
                    hconsVar
-                   (prefixes os!!3 .:. "type")
+                   (prefixes os!!2 .:. "type")
                    (head (prefixes os) .:. "Qeq"))
                  s1
             s3 = addingTriple
@@ -203,15 +202,9 @@ putTop predicate epVar s =
                  (triple
                    hconsVar
                    (head(prefixes os) .:. "lowHcons")
-                   labelVar)
+                   handleVar)
                   s4
-            s6 = addingTriple
-                 (triple
-                   epVar
-                   (head(prefixes os) .:. "hasLabel")
-                   labelVar)
-                  s5
-        s6
+        s5
     else
       s
 
