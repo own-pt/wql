@@ -51,6 +51,14 @@ wqlTransformation w@(WQL p h) =
     patterns s1
     selectVars $ selectList s1
 
+{-
+  The only part of the transformation where the handles of an EP is important
+  is in the creation of handle constraints. For this reason, the code only
+  create the match of mrs:hasLabel in case of a HCONS.
+  It should be noted that a HCONS is from a hole(the "high" variable) to a
+  handle (the "low" variable). So the only variable we need to link to an EP
+  is the handle; the hole is already a variable.
+-}
 consTransformation :: Maybe [Cons] -> Query TransformData -> Query TransformData
 consTransformation (Just (x : xs)) s =
   do
@@ -58,6 +66,7 @@ consTransformation (Just (x : xs)) s =
     s1 <- createVar (high x) s
     s2 <- createVar (low x) (return s1)
     dict <- varDict s2
+    handle <- var
     let Just highVar = Map.lookup (high x) dict
         Just lowVar = Map.lookup (low x) dict
         s3 = addingTriple
@@ -76,9 +85,15 @@ consTransformation (Just (x : xs)) s =
              (triple
                v
                (prefixes s2 !! 0 .:. "lowHcons")
-               lowVar)
+               handle)
              s4
-    consTransformation (Just xs) s5
+        s6 = addingTriple
+             (triple
+               lowVar
+               (prefixes s2 !! 0 .:. "hasLabel")
+               handle)
+             s5
+    consTransformation (Just xs) s6
 consTransformation _ s = s
   
 predExprTransformation :: PredExpr -> Query TransformData -> Query TransformData
