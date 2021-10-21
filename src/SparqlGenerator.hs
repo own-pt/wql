@@ -32,7 +32,6 @@ generateSPARQL = createSelectQuery . wqlTransformation . fst . last . readP_to_S
 
 generateOptSPARQL = createSelectQuery . wqlTransformation . pushNots . fst . last . readP_to_S wql 
 
-wqlTransformation :: WQL -> Query SelectQuery    
 wqlTransformation w@(WQL p h) =
   do
     mrs <- mrs ; delph <- delph; rdf <- rdf; rdfs <- rdfs
@@ -45,11 +44,13 @@ wqlTransformation w@(WQL p h) =
             (return Map.empty)
             mrsVar
             prefixes
-            ((: []) <$> triple mrsVar (rdf .:. "type") (mrs .:. "MRS"))
+            (return [])
+            -- ((: []) <$> triple mrsVar (rdf .:. "type") (mrs .:. "MRS"))
             [mrsVar])
-    s1 <- consTransformation h s
-    patterns s1
-    selectVars $ selectList s1
+      s1 = consTransformation h s
+    s2 <- addingTriple (triple mrsVar (rdf .:. "type") (mrs .:. "MRS")) s1
+    patterns s2
+    selectVars $ selectList s2
 
 consTransformation :: Maybe [Cons] -> Query TransformData -> Query TransformData
 consTransformation (Just (x : xs)) s =
