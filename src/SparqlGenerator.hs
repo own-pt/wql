@@ -228,28 +228,33 @@ putPredText predicateVar predText modf s =
   do
     if '*' `elem` predText
       then
-        triplesPred newPredText
+        do
+          let newPredText = T.replace "*" ".*" $ T.pack predText
+          os <- s
+          v <- var
+          s1 <- addingTriple
+                (triple
+                  predicateVar
+                  (prefixes os!!1 .:. modfToRDFRel modf)
+                  v)
+                s
+          addingTriple
+            (filterExpr $ regex v newPredText)
+            (return s1)
       else
-        triplesPred (T.pack predText)
+        do
+          os <- s
+          addingTriple
+            (triple
+              predicateVar
+              (prefixes os!!1 .:. modfToRDFRel modf)
+              (T.pack predText))
+            s
       where
-        newPredText = T.replace "*" ".*" $ T.pack predText
         modfToRDFRel Nothing = "predText"
         modfToRDFRel (Just '+') = "hasLemma"
         modfToRDFRel (Just '/') = "hasPos"
         modfToRDFRel (Just '=') = "hasSense"
-        triplesPred t =
-          do
-            os <- s
-            v <- var
-            s1 <- addingTriple
-                  (triple
-                    predicateVar
-                    (prefixes os!!1 .:. modfToRDFRel modf)
-                    v)
-                  s
-            addingTriple
-              (filterExpr $ regex v t)
-              (return s1)
        
 processArgs :: Maybe [Arg] -> QG.Variable -> Query TransformData -> Query TransformData
 processArgs (Just ((Arg role (Just holeName)):xs)) epVar s =
