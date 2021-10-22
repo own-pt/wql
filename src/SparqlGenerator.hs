@@ -38,16 +38,19 @@ wqlTransformation w@(WQL p h) =
     let prefixes = [mrs, delph, rdf, rdfs]
     mrsVar <- var
     let
-      s = predExprTransformation
-          p
-          (return $ TransformData
+      s0 = return $
+           TransformData
             (return Map.empty)
             mrsVar
             prefixes
             (return [])
-            -- ((: []) <$> triple mrsVar (rdf .:. "type") (mrs .:. "MRS"))
-            [mrsVar])
-      s1 = consTransformation h s
+            [mrsVar]
+      s = consTransformation
+          h
+          s0
+      s1 = predExprTransformation
+           p
+           s
     s2 <- addingTriple (triple mrsVar (rdf .:. "type") (mrs .:. "MRS")) s1
     patterns s2
     selectVars $ selectList s2
@@ -65,8 +68,8 @@ consTransformation (Just (x : xs)) s =
         s3 = addingTriple
              (triple
                v
-               (prefixes s2 !! 2 .:. "type")
-               (prefixes s2 !! 0 .:. "Qeq"))
+               (prefixes s2 !! 0 .:. "lowHcons")
+               lowVar)
              (return s2)
         s4 = addingTriple
              (triple
@@ -77,8 +80,8 @@ consTransformation (Just (x : xs)) s =
         s5 = addingTriple
              (triple
                v
-               (prefixes s2 !! 0 .:. "lowHcons")
-               lowVar)
+               (prefixes s2 !! 2 .:. "type")
+               (prefixes s2 !! 0 .:. "Qeq"))
              s4
     consTransformation (Just xs) s5
 consTransformation _ s = s
@@ -94,7 +97,7 @@ predExprTransformation (And pred1 pred2) s =
     let p0 = patterns os
         p1 = patterns s1
         p2 = patterns s2
-    return $ s2 {patterns = (++) <$> p0 <*> p1 *> p2}
+    return $ s2 {patterns = (++) <$> p2 <*> (p1 <* p0)}
 predExprTransformation (Or pred1 pred2) s =
   do
     os <- s
@@ -122,21 +125,21 @@ atomicTransform pred@(Predicate _ (Just handleName) _ _ _) s =
     let Just handleVar = Map.lookup handleName dict
         s2 = addingTriple
              (triple
-               (mrsVar s1)
-               (prefixes s1 !! 0 .:. "hasEP")
-               epVar)
+               epVar
+               (prefixes s1 !! 0 .:. "hasLabel")
+               handleVar)
              (return s1)
         s3 = addingTriple
              (triple
                epVar
                (prefixes s1 !! 3 .:. "label")
                epLabelVar)
-             s2
+             s2        
         s4 = addingTriple
              (triple
-               epVar
-               (prefixes s1 !! 0 .:. "hasLabel")
-               handleVar)
+               (mrsVar s1)
+               (prefixes s1 !! 0 .:. "hasEP")
+               epVar)
              s3
         s5 = putTop pred handleVar s4
         s6 = putPred pred epVar s5
