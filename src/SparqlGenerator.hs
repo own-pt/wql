@@ -62,7 +62,6 @@ consTransformation (Just (x : xs)) s =
     s1 <- createVar (high x) s
     s2 <- createVar (low x) (return s1)
     dict <- varDict s2
-    handle <- var
     let Just highVar = Map.lookup (high x) dict
         Just lowVar = Map.lookup (low x) dict
         s3 = addingTriple
