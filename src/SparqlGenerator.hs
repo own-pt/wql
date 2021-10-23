@@ -58,7 +58,7 @@ wqlTransformation w@(WQL p h) =
 consTransformation :: Maybe [Cons] -> Query TransformData -> Query TransformData
 consTransformation (Just (x : xs)) s =
   do
-    v <- var
+    hconsVar <- var
     s1 <- createVar (high x) s
     s2 <- createVar (low x) (return s1)
     dict <- varDict s2
@@ -66,19 +66,19 @@ consTransformation (Just (x : xs)) s =
         Just lowVar = Map.lookup (low x) dict
         s3 = addingTriple
              (triple
-               v
+               hconsVar
                (prefixes s2 !! 0 .:. "lowHcons")
                lowVar)
              (return s2)
         s4 = addingTriple
              (triple
-               v
+               hconsVar
                (prefixes s2 !! 0 .:. "highHcons")
                highVar)
              s3
         s5 = addingTriple
              (triple
-               v
+               hconsVar
                (prefixes s2 !! 2 .:. "type")
                (prefixes s2 !! 0 .:. "Qeq"))
              s4
@@ -215,14 +215,14 @@ putPred :: Predicate -> QG.Variable -> Query TransformData -> Query TransformDat
 putPred (Predicate _ _ modf (Just predText) _) epVar s = 
   do
     os <- s
-    v <- var
+    predicateVar <- var
     let s1 = addingTriple
              (triple
                epVar
                (prefixes os!!1 .:. "hasPredicate")
-               v)
+               predicateVar)
              s
-        s2 = putPredText v predText modf s1
+        s2 = putPredText predicateVar predText modf s1
     s2
 putPred _ epVar s = s
 
@@ -234,15 +234,15 @@ putPredText predicateVar predText modf s =
         do
           let newPredText = T.replace "*" ".*" $ T.pack predText
           os <- s
-          v <- var
+          predTextVar <- var
           s1 <- addingTriple
                 (triple
                   predicateVar
                   (prefixes os!!1 .:. modfToRDFRel modf)
-                  v)
+                  predTextVar)
                 s
           addingTriple
-            (filterExpr $ regex v newPredText)
+            (filterExpr $ regex predTextVar newPredText)
             (return s1)
       else
         do
@@ -264,35 +264,38 @@ processArgs (Just ((Arg role (Just holeName)):xs)) epVar s =
   do
     os <- createVar holeName s
     dict <- varDict os
-    let Just v = Map.lookup holeName dict
+    let Just holeNameVar = Map.lookup holeName dict
     case role of
       "*" ->
         do
           s1 <- addingTriple
-                (triple epVar (head (prefixes os) .:. T.pack "role") v)
+                (triple epVar (head (prefixes os) .:. T.pack "role") holeNameVar)
                 (return os)
           s2 <- processArgs (Just xs) epVar (return s1)
-          return s2 {selectList = v : selectList s2}
+          return s2 {selectList = holeNameVar : selectList s2}
       _ -> if '*' `elem` role
            then
              do
                let newRoleText = T.replace "*" ".*" $ (T.toLower . T.pack) role
                roleV <- var
                s1 <- addingTriple
-                     (triple epVar roleV v)
+                     (triple epVar roleV holeNameVar)
                      s
                s2 <- addingTriple
                      (filterExpr $ regex roleV newRoleText)
                      (return s1)
                s3 <- processArgs (Just xs) epVar (return s2)
-               return s3 {selectList = v : selectList s3}
+               return s3 {selectList = holeNameVar : selectList s3}
            else
              do
                s1 <- addingTriple
-                     (triple epVar (head (prefixes os) .:. (T.toLower . T.pack) role) v)
+                     (triple
+                      epVar
+                      (head (prefixes os) .:. (T.toLower . T.pack) role)
+                      holeNameVar)
                      (return os)
                s2 <- processArgs (Just xs) epVar (return s1)
-               return s2 {selectList = v : selectList s2}
+               return s2 {selectList = holeNameVar : selectList s2}
 processArgs _ _ s = s
 
         
