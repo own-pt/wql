@@ -45,15 +45,11 @@ wqlTransformation w@(WQL p h) =
             prefixes
             (return [])
             [mrsVar]
-      s = consTransformation
-          h
-          s0
-      s1 = predExprTransformation
-           p
-           s
-    s2 <- addingTriple (triple mrsVar (rdf .:. "type") (mrs .:. "MRS")) s1
-    patterns s2
-    selectVars $ selectList s2
+      s1 = addingTriple (triple mrsVar (rdf .:. "type") (mrs .:. "MRS")) s0
+      s2 = predExprTransformation p s1
+    s3 <- consTransformation h s2
+    patterns s3
+    selectVars $ selectList s3
 
 consTransformation :: Maybe [Cons] -> Query TransformData -> Query TransformData
 consTransformation (Just (x : xs)) s =
@@ -93,27 +89,46 @@ predExprTransformation (And pred1 pred2) s =
     os <- s
     s1 <- predExprTransformation pred1 $ return $ os {patterns = return []}
     s2 <- predExprTransformation pred2 $ return $ s1 {patterns = return []}
+    {-
     let p0 = patterns os
         p1 = patterns s1
         p2 = patterns s2
     return $ s2 {patterns = (++) <$> p2 <*> (p1 <* p0)}
+    -}
+    pure s2 {patterns =
+             patterns os >>= \p0 ->
+             patterns s1 >>= \p1 ->
+             patterns s2 >>= \p2 ->
+               pure $ p0 ++ p1 ++ p2} 
 predExprTransformation (Or pred1 pred2) s =
   do
     os <- s
     s1 <- predExprTransformation pred1 $ return $ os {patterns = return []}
     s2 <- predExprTransformation pred2 $ return $ s1 {patterns = return []}
+    {-
     let p0 = patterns os
         p1 = patterns s1
         p2 = patterns s2
     return $ s2 {patterns = (:) <$> union p1 p2 <*> p0}
+    -}
+    pure s2 {patterns =
+             patterns os >>= \p0 ->
+             union (patterns s1) (patterns s2) >>= \p1 ->
+               pure $ p0 ++ [p1]}
 predExprTransformation (Not pred) s =
   do
     os <- s
     s1 <- predExprTransformation pred $ return $ os {patterns = return []}
+    {-
     let p0 = patterns os
         p1 = patterns s1
     return $ s1 {patterns = (:) <$> filterNotExists p1 <*> p0}
-
+    -}
+    pure s1 {patterns =
+             patterns os >>= \p0 ->
+             filterNotExists (patterns s1) >>= \p1 ->
+                pure $ p0 ++ [p1]}
+    
 atomicTransform :: Predicate -> Query TransformData -> Query TransformData
 atomicTransform pred@(Predicate _ (Just handleName) _ _ _) s =
   do
@@ -310,12 +325,30 @@ createVar varName s =
     else
       do
         v <- var
-        return $ os {varDict = return $ Map.insert varName v dict, selectList = selectList os}
+        return $ os {varDict = return $ Map.insert varName v dict,
+                     selectList = selectList os}
 
 addingTriple :: Query QG.Pattern -> Query TransformData -> Query TransformData
 addingTriple t s =
   do
     os <- s
-    return $ os {patterns = (:) <$> t <*> patterns os}
+    -- ot <- t
+    -- op <- patterns os
+    -- op2 <- patterns os
+    -- pure os {patterns = pure $ op ++ [ot]}
+    pure os {patterns =
+              patterns os >>= \op ->
+                t >>= \ot ->
+                pure $ op ++ [ot]}
+    {-
+    pure os {patterns =
+             do
+               ot <- t
+               op <- patterns os
+               pure $ op ++ [ot]
+               -- pure $ ot : op
+            }
+    -}
+    -- return $ os {patterns = (:) <$> t <*> patterns os}
 
     
