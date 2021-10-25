@@ -10,7 +10,8 @@ import Database.HSparql.Connection
 import qualified Data.Text as T
 import qualified Data.Map as Map
 import WQL (wql, pushNots)
-     
+-- import Debug.Trace
+       
 mrs = prefix "mrs" (iriRef "http://www.delph-in.net/schema/mrs#")
 --erg = prefix "erg" (iriRef "http://www.delph-in.net/schema/erg#")
 delph = prefix "delph" (iriRef "http://www.delph-in.net/schema/")
@@ -47,6 +48,10 @@ wqlTransformation w@(WQL p h) =
     s1 <- addingTriple (triple mrsVar (rdf .:. "type") (mrs .:. "MRS")) (pure s0)
     s2 <- predExprTransformation p (pure s1)
     s3 <- consTransformation h (pure s2)
+    {-
+    dd <- varDict s3
+    traceM $ show dd
+    -}
     patterns s3
     selectVars $ selectList s3
     
@@ -61,23 +66,29 @@ consTransformation (Just (x : xs)) s =
         Just lowVar = Map.lookup (low x) dict
     s3 <- addingTriple
           (triple
-            hconsVar
-            (prefixes s2 !! 0 .:. "lowHcons")
-            lowVar)
+            (mrsVar s2)
+            (prefixes s2 !! 0 .:. "hasHcons")
+            hconsVar)
           (pure s2)
     s4 <- addingTriple
           (triple
             hconsVar
-            (prefixes s2 !! 0 .:. "highHcons")
-            highVar)
+            (prefixes s2 !! 2 .:. "type")
+            (prefixes s2 !! 0 .:. "Qeq"))
           (pure s3)
     s5 <- addingTriple
           (triple
             hconsVar
-            (prefixes s2 !! 2 .:. "type")
-            (prefixes s2 !! 0 .:. "Qeq"))
+            (prefixes s2 !! 0 .:. "highHcons")
+            highVar)
           (pure s4)
-    consTransformation (Just xs) (pure s5)
+    s6 <- addingTriple
+          (triple
+            hconsVar
+            (prefixes s2 !! 0 .:. "lowHcons")
+            lowVar)
+          (pure s5)
+    consTransformation (Just xs) (pure s6)
 consTransformation _ s = s
   
 predExprTransformation :: PredExpr -> Query TransformData -> Query TransformData
@@ -182,15 +193,15 @@ putTop predicate handleVar s =
               s
         s2 <- addingTriple
              (triple
-               hconsVar
-               (prefixes os!!2 .:. "type")
-               (head (prefixes os) .:. "Qeq"))
-             (pure s1)
-        s3 <- addingTriple
-             (triple
                (mrsVar os)
                (head(prefixes os) .:. "hasHcons")
                hconsVar)
+             (pure s1)
+        s3 <- addingTriple
+             (triple
+               hconsVar
+               (prefixes os!!2 .:. "type")
+               (head (prefixes os) .:. "Qeq"))
              (pure s2)
         s4 <- addingTriple
              (triple
