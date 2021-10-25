@@ -240,7 +240,7 @@ putPredText predicateVar predText modf s =
     if '*' `elem` predText
       then
         do
-          let newPredText = T.replace "*" ".*" $ T.pack predText
+          let newPredText = T.replace "*" ".*" $ T.pack $ "^" ++ predText ++ "$"
           os <- s
           predTextVar <- var
           s1 <- addingTriple
