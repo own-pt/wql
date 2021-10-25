@@ -88,12 +88,6 @@ predExprTransformation (And pred1 pred2) s =
     os <- s
     s1 <- predExprTransformation pred1 $ return $ os {patterns = return []}
     s2 <- predExprTransformation pred2 $ return $ s1 {patterns = return []}
-    {-
-    let p0 = patterns os
-        p1 = patterns s1
-        p2 = patterns s2
-    return $ s2 {patterns = (++) <$> p2 <*> (p1 <* p0)}
-    -}
     pure s2 {patterns =
              patterns os >>= \p0 ->
              patterns s1 >>= \p1 ->
@@ -104,12 +98,6 @@ predExprTransformation (Or pred1 pred2) s =
     os <- s
     s1 <- predExprTransformation pred1 $ return $ os {patterns = return []}
     s2 <- predExprTransformation pred2 $ return $ s1 {patterns = return []}
-    {-
-    let p0 = patterns os
-        p1 = patterns s1
-        p2 = patterns s2
-    return $ s2 {patterns = (:) <$> union p1 p2 <*> p0}
-    -}
     pure s2 {patterns =
              patterns os >>= \p0 ->
              union (patterns s1) (patterns s2) >>= \p1 ->
@@ -331,23 +319,8 @@ addingTriple :: Query QG.Pattern -> Query TransformData -> Query TransformData
 addingTriple t s =
   do
     os <- s
-    -- ot <- t
-    -- op <- patterns os
-    -- op2 <- patterns os
-    -- pure os {patterns = pure $ op ++ [ot]}
     pure os {patterns =
               patterns os >>= \op ->
                 t >>= \ot ->
                 pure $ op ++ [ot]}
-    {-
-    pure os {patterns =
-             do
-               ot <- t
-               op <- patterns os
-               pure $ op ++ [ot]
-               -- pure $ ot : op
-            }
-    -}
-    -- return $ os {patterns = (:) <$> t <*> patterns os}
-
     
