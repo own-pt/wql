@@ -132,22 +132,22 @@ atomicTransform pred@(Predicate _ (Just handleName) _ _ _) s =
     let Just handleVar = Map.lookup handleName dict
     s2 <- addingTriple
          (triple
-           epVar
-           (prefixes s1 !! 0 .:. "hasLabel")
-           handleVar)
+           (mrsVar s1)
+           (prefixes s1 !! 0 .:. "hasEP")
+           epVar)
          (pure s1)
     s3 <- addingTriple
          (triple
            epVar
-           (prefixes s1 !! 3 .:. "label")
-           epLabelVar)
-         (pure s2)        
+           (prefixes s1 !! 0 .:. "hasLabel")
+           handleVar)
+         (pure s2)
     s4 <- addingTriple
          (triple
-           (mrsVar s1)
-           (prefixes s1 !! 0 .:. "hasEP")
-           epVar)
-         (pure s3)
+           epVar
+           (prefixes s1 !! 3 .:. "label")
+           epLabelVar)
+         (pure s3)       
     s5 <- putPred pred epVar (pure s4)
     s6 <- processArgs (predargs pred) epVar (pure s5)
     s7 <- putTop pred handleVar (pure s6)
