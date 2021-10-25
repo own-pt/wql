@@ -148,15 +148,15 @@ atomicTransform pred@(Predicate _ (Just handleName) _ _ _) s =
                (prefixes s1 !! 3 .:. "label")
                epLabelVar)
              s2        
-        s5 = addingTriple
+        s4 = addingTriple
              (triple
                (mrsVar s1)
                (prefixes s1 !! 0 .:. "hasEP")
                epVar)
              s3
-        --s5 = putTop pred handleVar s4
-        s6 = putPred pred epVar s5
-        s7 = processArgs (predargs pred) epVar s6
+        s5 = putPred pred epVar s4
+        s6 = processArgs (predargs pred) epVar s5
+        s7 = putTop pred handleVar s6
     s7 >>= (\x -> return $ x {selectList = epLabelVar : selectList x})
     
 atomicTransform pred s =
@@ -176,9 +176,9 @@ atomicTransform pred s =
                (prefixes os !! 3 .:. "label")
                epLabelVar)
              s1
-        s3 = putTop pred epVar s2
-        s4 = putPred pred epVar s3
-        s5 = processArgs (predargs pred) epVar s4
+        s3 = putPred pred epVar s2
+        s4 = processArgs (predargs pred) epVar s3
+        s5 = putTop pred epVar s4
     s5 >>= (\x -> return $ x {selectList = epLabelVar : selectList x})
   
 -- hardcoding the creating of the hcons, review later
