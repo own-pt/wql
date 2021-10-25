@@ -106,11 +106,6 @@ predExprTransformation (Not pred) s =
   do
     os <- s
     s1 <- predExprTransformation pred $ return $ os {patterns = return []}
-    {-
-    let p0 = patterns os
-        p1 = patterns s1
-    return $ s1 {patterns = (:) <$> filterNotExists p1 <*> p0}
-    -}
     pure s1 {patterns =
              patterns os >>= \p0 ->
              filterNotExists (patterns s1) >>= \p1 ->
