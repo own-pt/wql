@@ -37,20 +37,19 @@ wqlTransformation w@(WQL p h) =
     mrs <- mrs ; delph <- delph; rdf <- rdf; rdfs <- rdfs
     let prefixes = [mrs, delph, rdf, rdfs]
     mrsVar <- var
-    let
-      s0 = return $
-           TransformData
-            (return Map.empty)
-            mrsVar
-            prefixes
-            (return [])
-            [mrsVar]
-      s1 = addingTriple (triple mrsVar (rdf .:. "type") (mrs .:. "MRS")) s0
-      s2 = predExprTransformation p s1
-    s3 <- consTransformation h s2
+    s0 <- pure $
+          TransformData
+          (return Map.empty)
+          mrsVar
+          prefixes
+          (return [])
+          [mrsVar]
+    s1 <- addingTriple (triple mrsVar (rdf .:. "type") (mrs .:. "MRS")) (pure s0)
+    s2 <- predExprTransformation p (pure s1)
+    s3 <- consTransformation h (pure s2)
     patterns s3
     selectVars $ selectList s3
-
+    
 consTransformation :: Maybe [Cons] -> Query TransformData -> Query TransformData
 consTransformation (Just (x : xs)) s =
   do
@@ -149,13 +148,13 @@ atomicTransform pred@(Predicate _ (Just handleName) _ _ _) s =
                (prefixes s1 !! 3 .:. "label")
                epLabelVar)
              s2        
-        s4 = addingTriple
+        s5 = addingTriple
              (triple
                (mrsVar s1)
                (prefixes s1 !! 0 .:. "hasEP")
                epVar)
              s3
-        s5 = putTop pred handleVar s4
+        --s5 = putTop pred handleVar s4
         s6 = putPred pred epVar s5
         s7 = processArgs (predargs pred) epVar s6
     s7 >>= (\x -> return $ x {selectList = epLabelVar : selectList x})
