@@ -42,7 +42,7 @@ wqlTransformation w@(WQL p h) =
           (return Map.empty)
           mrsVar
           prefixes
-          (return [])
+          (pure [])
           [mrsVar]
     s1 <- addingTriple (triple mrsVar (rdf .:. "type") (mrs .:. "MRS")) (pure s0)
     s2 <- predExprTransformation p (pure s1)
@@ -59,25 +59,25 @@ consTransformation (Just (x : xs)) s =
     dict <- varDict s2
     let Just highVar = Map.lookup (high x) dict
         Just lowVar = Map.lookup (low x) dict
-        s3 = addingTriple
-             (triple
-               hconsVar
-               (prefixes s2 !! 0 .:. "lowHcons")
-               lowVar)
-             (return s2)
-        s4 = addingTriple
-             (triple
-               hconsVar
-               (prefixes s2 !! 0 .:. "highHcons")
-               highVar)
-             s3
-        s5 = addingTriple
-             (triple
-               hconsVar
-               (prefixes s2 !! 2 .:. "type")
-               (prefixes s2 !! 0 .:. "Qeq"))
-             s4
-    consTransformation (Just xs) s5
+    s3 <- addingTriple
+          (triple
+            hconsVar
+            (prefixes s2 !! 0 .:. "lowHcons")
+            lowVar)
+          (pure s2)
+    s4 <- addingTriple
+          (triple
+            hconsVar
+            (prefixes s2 !! 0 .:. "highHcons")
+            highVar)
+          (pure s3)
+    s5 <- addingTriple
+          (triple
+            hconsVar
+            (prefixes s2 !! 2 .:. "type")
+            (prefixes s2 !! 0 .:. "Qeq"))
+          (pure s4)
+    consTransformation (Just xs) (pure s5)
 consTransformation _ s = s
   
 predExprTransformation :: PredExpr -> Query TransformData -> Query TransformData
@@ -86,8 +86,8 @@ predExprTransformation (P pred) s =
 predExprTransformation (And pred1 pred2) s =
   do
     os <- s
-    s1 <- predExprTransformation pred1 $ return $ os {patterns = return []}
-    s2 <- predExprTransformation pred2 $ return $ s1 {patterns = return []}
+    s1 <- predExprTransformation pred1 $ return $ os {patterns = pure []}
+    s2 <- predExprTransformation pred2 $ return $ s1 {patterns = pure []}
     pure s2 {patterns =
              patterns os >>= \p0 ->
              patterns s1 >>= \p1 ->
@@ -96,8 +96,8 @@ predExprTransformation (And pred1 pred2) s =
 predExprTransformation (Or pred1 pred2) s =
   do
     os <- s
-    s1 <- predExprTransformation pred1 $ return $ os {patterns = return []}
-    s2 <- predExprTransformation pred2 $ return $ s1 {patterns = return []}
+    s1 <- predExprTransformation pred1 $ pure os {patterns = pure []}
+    s2 <- predExprTransformation pred2 $ pure s1 {patterns = pure []}
     pure s2 {patterns =
              patterns os >>= \p0 ->
              union (patterns s1) (patterns s2) >>= \p1 ->
@@ -105,7 +105,7 @@ predExprTransformation (Or pred1 pred2) s =
 predExprTransformation (Not pred) s =
   do
     os <- s
-    s1 <- predExprTransformation pred $ return $ os {patterns = return []}
+    s1 <- predExprTransformation pred $ pure os {patterns = pure []}
     pure s1 {patterns =
              patterns os >>= \p0 ->
              filterNotExists (patterns s1) >>= \p1 ->
@@ -119,50 +119,50 @@ atomicTransform pred@(Predicate _ (Just handleName) _ _ _) s =
     epLabelVar <- var
     epVar <- var
     let Just handleVar = Map.lookup handleName dict
-        s2 = addingTriple
-             (triple
-               epVar
-               (prefixes s1 !! 0 .:. "hasLabel")
-               handleVar)
-             (return s1)
-        s3 = addingTriple
-             (triple
-               epVar
-               (prefixes s1 !! 3 .:. "label")
-               epLabelVar)
-             s2        
-        s4 = addingTriple
-             (triple
-               (mrsVar s1)
-               (prefixes s1 !! 0 .:. "hasEP")
-               epVar)
-             s3
-        s5 = putPred pred epVar s4
-        s6 = processArgs (predargs pred) epVar s5
-        s7 = putTop pred handleVar s6
-    s7 >>= (\x -> return $ x {selectList = epLabelVar : selectList x})
+    s2 <- addingTriple
+         (triple
+           epVar
+           (prefixes s1 !! 0 .:. "hasLabel")
+           handleVar)
+         (pure s1)
+    s3 <- addingTriple
+         (triple
+           epVar
+           (prefixes s1 !! 3 .:. "label")
+           epLabelVar)
+         (pure s2)        
+    s4 <- addingTriple
+         (triple
+           (mrsVar s1)
+           (prefixes s1 !! 0 .:. "hasEP")
+           epVar)
+         (pure s3)
+    s5 <- putPred pred epVar (pure s4)
+    s6 <- processArgs (predargs pred) epVar (pure s5)
+    s7 <- putTop pred handleVar (pure s6)
+    pure s7 {selectList = epLabelVar : selectList s7}
     
 atomicTransform pred s =
   do
     os <- s
     epVar <- var
     epLabelVar <- var
-    let s1 = addingTriple
-             (triple
-               (mrsVar os)
-               (prefixes os !! 0 .:. "hasEP")
-               epVar)
-             s
-        s2 = addingTriple
-             (triple
-               epVar
-               (prefixes os !! 3 .:. "label")
-               epLabelVar)
-             s1
-        s3 = putPred pred epVar s2
-        s4 = processArgs (predargs pred) epVar s3
-        s5 = putTop pred epVar s4
-    s5 >>= (\x -> return $ x {selectList = epLabelVar : selectList x})
+    s1 <- addingTriple
+          (triple
+            (mrsVar os)
+            (prefixes os !! 0 .:. "hasEP")
+            epVar)
+          s
+    s2 <- addingTriple
+         (triple
+           epVar
+           (prefixes os !! 3 .:. "label")
+           epLabelVar)
+         (pure s1)
+    s3 <- putPred pred epVar (pure s2)
+    s4 <- processArgs (predargs pred) epVar (pure s3)
+    s5 <- putTop pred epVar (pure s4)
+    pure s5 {selectList = epLabelVar : selectList s5}
   
 -- hardcoding the creating of the hcons, review later
 putTop :: Predicate -> QG.Variable -> Query TransformData -> Query TransformData
@@ -174,37 +174,37 @@ putTop predicate handleVar s =
       do
         topH <- var
         hconsVar <- var
-        let s1 = addingTriple
-                 (triple
-                   (mrsVar os)
-                   (prefixes os!!1 .:. "hasTop")
-                   topH)
-                 s
-            s2 = addingTriple
-                 (triple
-                   hconsVar
-                   (prefixes os!!2 .:. "type")
-                   (head (prefixes os) .:. "Qeq"))
-                 s1
-            s3 = addingTriple
-                 (triple
-                   (mrsVar os)
-                   (head(prefixes os) .:. "hasHcons")
-                   hconsVar)
-                 s2
-            s4 = addingTriple
-                 (triple
-                   hconsVar
-                   (head(prefixes os) .:. "highHcons")
-                   topH)
-                 s3
-            s5 = addingTriple
-                 (triple
-                   hconsVar
-                   (head(prefixes os) .:. "lowHcons")
-                   handleVar)
-                  s4
-        s5
+        s1 <- addingTriple
+              (triple
+               (mrsVar os)
+               (prefixes os!!1 .:. "hasTop")
+               topH)
+              s
+        s2 <- addingTriple
+             (triple
+               hconsVar
+               (prefixes os!!2 .:. "type")
+               (head (prefixes os) .:. "Qeq"))
+             (pure s1)
+        s3 <- addingTriple
+             (triple
+               (mrsVar os)
+               (head(prefixes os) .:. "hasHcons")
+               hconsVar)
+             (pure s2)
+        s4 <- addingTriple
+             (triple
+               hconsVar
+               (head(prefixes os) .:. "highHcons")
+               topH)
+             (pure s3)
+        s5 <- addingTriple
+             (triple
+               hconsVar
+               (head(prefixes os) .:. "lowHcons")
+               handleVar)
+              (pure s4)
+        pure s5
     else
       s
 
@@ -213,14 +213,14 @@ putPred (Predicate _ _ modf (Just predText) _) epVar s =
   do
     os <- s
     predicateVar <- var
-    let s1 = addingTriple
-             (triple
-               epVar
-               (prefixes os!!1 .:. "hasPredicate")
-               predicateVar)
-             s
-        s2 = putPredText predicateVar predText modf s1
-    s2
+    s1 <- addingTriple
+          (triple
+            epVar
+            (prefixes os!!1 .:. "hasPredicate")
+            predicateVar)
+          s
+    s2 <- putPredText predicateVar predText modf (pure s1)
+    pure s2
 putPred _ epVar s = s
 
 putPredText :: QG.Variable -> Data.Pattern -> Maybe Char -> Query TransformData -> Query TransformData
@@ -267,9 +267,9 @@ processArgs (Just ((Arg role (Just holeName)):xs)) epVar s =
         do
           s1 <- addingTriple
                 (triple epVar (head (prefixes os) .:. T.pack "role") holeNameVar)
-                (return os)
-          s2 <- processArgs (Just xs) epVar (return s1)
-          return s2 {selectList = holeNameVar : selectList s2}
+                (pure os)
+          s2 <- processArgs (Just xs) epVar (pure s1)
+          pure s2 {selectList = holeNameVar : selectList s2}
       _ -> if '*' `elem` role
            then
              do
@@ -280,9 +280,9 @@ processArgs (Just ((Arg role (Just holeName)):xs)) epVar s =
                      s
                s2 <- addingTriple
                      (filterExpr $ regex roleV newRoleText)
-                     (return s1)
-               s3 <- processArgs (Just xs) epVar (return s2)
-               return s3 {selectList = holeNameVar : selectList s3}
+                     (pure s1)
+               s3 <- processArgs (Just xs) epVar (pure s2)
+               pure s3 {selectList = holeNameVar : selectList s3}
            else
              do
                s1 <- addingTriple
@@ -290,9 +290,9 @@ processArgs (Just ((Arg role (Just holeName)):xs)) epVar s =
                       epVar
                       (head (prefixes os) .:. (T.toLower . T.pack) role)
                       holeNameVar)
-                     (return os)
-               s2 <- processArgs (Just xs) epVar (return s1)
-               return s2 {selectList = holeNameVar : selectList s2}
+                     (pure os)
+               s2 <- processArgs (Just xs) epVar (pure s1)
+               pure s2 {selectList = holeNameVar : selectList s2}
 processArgs _ _ s = s
 
         
@@ -307,8 +307,7 @@ createVar varName s =
     else
       do
         v <- var
-        return $ os {varDict = return $ Map.insert varName v dict,
-                     selectList = selectList os}
+        pure os {varDict = return $ Map.insert varName v dict}
 
 addingTriple :: Query QG.Pattern -> Query TransformData -> Query TransformData
 addingTriple t s =
@@ -316,6 +315,6 @@ addingTriple t s =
     os <- s
     pure os {patterns =
               patterns os >>= \op ->
-                t >>= \ot ->
+              t >>= \ot ->
                 pure $ op ++ [ot]}
     
