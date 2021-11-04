@@ -108,7 +108,7 @@ def getName():
         #     page = n_pages
         
         return render_template("formresp.html.jinja", 
-                                sparql = x.text.replace('<','&lt;').replace('>','&gt;'),
+                                sparql = x.text.replace('<','&lt;').replace('>','&gt;').strip(" \n"),
                                 query_result = sparql_result.text.replace('<','&lt;').replace('>','&gt;'),
                                 wql_query = wql_q, 
                                 matchesPage = matchesPage,

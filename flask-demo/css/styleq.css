@@ -16,6 +16,7 @@ body {
     padding: 2px;
     border: 1px solid #888;
     margin-top: 7px;
+    white-space: break-spaces;
 }
 
 .mrsViz {

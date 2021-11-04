@@ -5,9 +5,7 @@
     <link rel="stylesheet" type="text/css" media="screen" href="{{ url_for('static', filename='../css/style.css') }}">    
     <div id="result"><br>
         <button id="sparql">Hide SPARQL</button>
-        <div id="sparql-div" style="display: block;">
-            {{ sparql }}
-        </div><br><br>
+        <div id="sparql-div" style="display: block;">{{sparql}}</div><br><br>
         {# <div id="mrs-results">
             {{query_result}}
         </div> #}
