@@ -1,11 +1,17 @@
 {% extends 'form.html.jinja' %}
 
 {% block results %}
-    <script type="text/javascript" src="{{ url_for('static', filename='../js/mrs.js') }}" charset="utf-8"></script>      
+    <script type="text/javascript" src="{{ url_for('static', filename='../js/mrs.js') }}" charset="utf-8"></script>
     <link rel="stylesheet" type="text/css" media="screen" href="{{ url_for('static', filename='../css/style.css') }}">    
+    <link rel="stylesheet" type="text/css" media="screen" href="{{ url_for('static', filename='../css/prettify.css') }}">
+    <script type="text/javascript" src="{{ url_for('static', filename='../js/prettify.js') }}" charset="utf-8"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='../js/lang-sparql.js') }}" charset="utf-8"></script>
+    <script>
+        window.onload = (function(){ prettyPrint(); });
+    </script>
     <div id="result"><br>
         <button id="sparql">Hide SPARQL</button>
-        <div id="sparql-div" style="display: block;">{{sparql}}</div><br><br>
+        <pre id="sparql-pre" class="prettyprint lang-sparql" style="display: block;">{{sparql}}</pre><br><br>
         {# <div id="mrs-results">
             {{query_result}}
         </div> #}
